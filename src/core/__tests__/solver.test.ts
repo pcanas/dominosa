@@ -70,6 +70,10 @@ describe('generatePuzzle', () => {
     },
   );
 
+  it('rejects a solution cap that cannot detect ambiguity', () => {
+    expect(() => generatePuzzle({ order: 3, seed: 'x', solutionCap: 1 })).toThrow(RangeError);
+  });
+
   it('is reproducible for a seed', () => {
     const a = generatePuzzle({ order: 5, seed: 'same' });
     const b = generatePuzzle({ order: 5, seed: 'same' });

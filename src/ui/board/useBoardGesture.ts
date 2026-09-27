@@ -41,7 +41,10 @@ function createBoardGesture(input: BoardInput, enabled: boolean) {
     .minDistance(6)
     .onBegin((e) => input.begin(e.x, e.y))
     .onUpdate((e) => input.move(e.translationX, e.translationY))
-    .onEnd(() => input.end())
+    // `success` is false when the system cancels the touch (e.g. an iOS edge swipe): never place then.
+    .onEnd((_e, success) => {
+      if (success) input.end();
+    })
     .onFinalize(() => input.finalize());
 
   const tap = Gesture.Tap()

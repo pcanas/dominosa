@@ -46,9 +46,11 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const [confirmingReset, setConfirmingReset] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const leave = useSessionStore((s) => s.leave);
   useEffect(() => {
     open(level);
-  }, [level, open]);
+    return () => leave(level.id);
+  }, [level, open, leave]);
 
   useEffect(
     () => () => {

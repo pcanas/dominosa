@@ -90,6 +90,14 @@ describe('gameReducer', () => {
     expect(isSolved(gameReducer(solved, { type: 'reset' }))).toBe(false);
   });
 
+  it('starts a fresh attempt when a solved board is reset, so undo cannot restore the solve', () => {
+    const solved = play(place(0, 2), place(1, 3), place(4, 5));
+    const fresh = gameReducer(solved, { type: 'reset' });
+    expect(fresh.past).toEqual([]);
+    expect(canUndo(fresh)).toBe(false);
+    expect(gameReducer(fresh, { type: 'undo' })).toBe(fresh);
+  });
+
   it('does not count a full board with duplicates as solved', () => {
     const full = play(place(0, 1), place(2, 3), place(4, 5));
     expect(coveredCellCount(full)).toBe(6);

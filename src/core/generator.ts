@@ -41,6 +41,7 @@ export interface GeneratedPuzzle {
  */
 export function generatePuzzle(options: GenerateOptions): GeneratedPuzzle {
   const { order, seed, maxIterations = 400, maxRestarts = 50, solutionCap = 40 } = options;
+  if (solutionCap < 2) throw new RangeError('solutionCap must be at least 2 to tell unique puzzles apart');
   const { rows, cols } = gridShape(order);
   const rng = createRng(seed);
 

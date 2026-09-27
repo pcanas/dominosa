@@ -6,7 +6,7 @@ Este repo es el **hito 0** del plan: un prototipo jugable en el navegador, insta
 
 - 5 niveles en rampa de tamaño y profundidad de deducción: 4×5 (tutorial), 5×6, 7×8, 8×9 y 9×10 (experto).
 - Deslizar de una celda a su vecina para colocar (ficha fantasma mientras arrastras; si vuelves atrás, se cancela), tocar para quitar, colocar encima de otra ficha la reemplaza.
-- Deshacer sin límite, reiniciar con confirmación, fichas repetidas en terracota con icono, verde salvia al resolver.
+- Deshacer (hasta 500 pasos), reiniciar con confirmación, fichas repetidas en terracota con icono, verde salvia al resolver.
 - Progreso y mejor tiempo guardados en el dispositivo. Modo oscuro cálido. ES / EN / FR según el idioma del sistema.
 - Funciona sin conexión una vez abierta (service worker).
 
@@ -20,7 +20,7 @@ Este repo es el **hito 0** del plan: un prototipo jugable en el navegador, insta
 2. En el repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 3. Cada push a `main` pasa los checks (tipos, lint, formato, tests y unicidad de niveles) y publica en `https://<usuario>.github.io/dominosa/`. Si el primer despliegue falla por no haber activado Pages aún, vuelve a lanzarlo desde **Actions → CI → Re-run jobs**.
 
-La ruta base se calcula sola a partir del nombre del repo (`BASE_URL`), así que el nombre puede ser cualquiera.
+La ruta base (`BASE_URL`) la da GitHub Pages en el propio workflow, así que el repo puede llamarse como quieras y también funciona con dominio propio.
 
 ## Instalar en el iPhone
 

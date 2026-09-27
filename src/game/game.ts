@@ -40,10 +40,15 @@ export function createGame(puzzle: Puzzle): GameState {
 
 /**
  * Applies an action. Returns the same object when nothing changes, so callers
- * can skip re-renders and haptics. A solved board is locked except for reset.
+ * can skip re-renders and haptics.
+ *
+ * A solved board is locked; reset is the only way out and starts a brand-new
+ * attempt with no history (so undo can never bring back a solved board).
+ * Resetting an unsolved board can be undone.
  */
 export function gameReducer(state: GameState, action: GameAction): GameState {
   if (action.type === 'reset') {
+    if (isSolved(state)) return createGame(state.puzzle);
     return state.partner.every((p) => p === -1) ? state : commit(state, createGame(state.puzzle).partner);
   }
   if (isSolved(state)) return state;

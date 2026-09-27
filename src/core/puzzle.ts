@@ -113,7 +113,9 @@ export function decodeSolution(text: string, cols: number): CellIndex[] {
     return cell + offset;
   });
   partner.forEach((p, cell) => {
-    if (partner[p] !== cell) throw new SyntaxError(`Inconsistent solution at cell ${cell}`);
+    if (partner[p] !== cell || !areAdjacent(cell, p, cols)) {
+      throw new SyntaxError(`Inconsistent solution at cell ${cell}`);
+    }
   });
   return partner;
 }

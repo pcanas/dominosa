@@ -97,6 +97,8 @@ describe('puzzle', () => {
     expect(text).toBe('DDUURL');
     expect(decodeSolution(text, 2)).toEqual(ORDER1_UNIQUE_SOLUTION);
     expect(() => decodeSolution('DDUURR', 2)).toThrow(SyntaxError);
+    // On a 2×3 grid, cell 2 (end of row 0) 'R' + cell 3 (start of row 1) 'L' would wrap around.
+    expect(() => decodeSolution('RLRLRL', 3)).toThrow(SyntaxError);
     expect(() => decodeCells('01x')).toThrow(SyntaxError);
   });
 

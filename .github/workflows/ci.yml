@@ -11,9 +11,10 @@ on:
 permissions:
   contents: read
 
+# Superseded pull-request runs are cancelled; runs on main always finish.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   EXPO_NO_TELEMETRY: 1
@@ -42,6 +43,10 @@ jobs:
       contents: read
       pages: write
       id-token: write
+    # Never cancel a Pages deployment halfway through.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -52,16 +57,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Resolve base path
-        id: base
-        # Project sites live under /<repo>; a <user>.github.io repo is served at the root.
-        run: |
-          repo="${GITHUB_REPOSITORY#*/}"
-          if [[ "$repo" == *.github.io ]]; then echo "path=" >> "$GITHUB_OUTPUT"; else echo "path=/$repo" >> "$GITHUB_OUTPUT"; fi
+      # Tells us where Pages serves the site: /<repo> for a project site, "" for
+      # a <user>.github.io repo or a custom domain.
+      - id: pages
+        uses: actions/configure-pages@v6
       - run: npm run build:web
         env:
-          BASE_URL: ${{ steps.base.outputs.path }}
-      - uses: actions/configure-pages@v6
+          BASE_URL: ${{ steps.pages.outputs.base_path }}
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
