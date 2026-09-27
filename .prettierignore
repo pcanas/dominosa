@@ -1,0 +1,5 @@
+dist
+node_modules
+.expo
+src/levels/packs
+package-lock.json
