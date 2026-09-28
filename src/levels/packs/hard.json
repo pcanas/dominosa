@@ -1,0 +1,138 @@
+{
+  "id": "hard",
+  "formatVersion": 1,
+  "levels": [
+    {
+      "id": "hard-01",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 2,
+      "cells": "445155412221571674773512244030763404300176607362457211523556600026761333",
+      "solution": "RLDDRLRLRLUUDRLDRLRLURLURLRLRLRLDDDRLRLDUUURLRLURLRLDDDDDDDDUUUUUUUURLRL",
+      "seed": "hard/g0/17"
+    },
+    {
+      "id": "hard-02",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 2,
+      "cells": "331044772545430677613276023745546253341107601057156511003427663524201262",
+      "solution": "DDDDDRLDUUUUURLURLRLDRLDDDRLURLUUUDRLDDDRLURLUUUDDDDRLRLUUUURLDDRLRLRLUU",
+      "seed": "hard/g0/25"
+    },
+    {
+      "id": "hard-03",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 2,
+      "cells": "324401634102347172563450020352007162546416637764366577375301450275112215",
+      "solution": "DRLRLRLDURLDDRLUDRLUURLDUDDDDRLUDUUUURLDUDRLDRLUDURLURLDURLRLRLURLRLRLRL",
+      "seed": "hard/g0/2"
+    },
+    {
+      "id": "hard-04",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 2,
+      "cells": "266346474367531703447670227612247015571752011532530210123553645631006440",
+      "solution": "RLDDDDDDRLUUUUUURLDDRLRLDDUURLRLUURLRLRLRLDRLDDDRLUDDUUUDRLUUDRLURLRLURL",
+      "seed": "hard/g0/7"
+    },
+    {
+      "id": "hard-05",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 3,
+      "cells": "325757710640113112033652635145026645074243002477574427266601035541331627",
+      "solution": "RLDDRLRLRLUURLRLRLRLRLRLDRLDDRLDURLUURLURLRLRLRLDDRLDDRLUURLUURLRLRLRLRL",
+      "seed": "hard/g1/2"
+    },
+    {
+      "id": "hard-06",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 3,
+      "cells": "675531513322577024074072036750241673206736411036524355114164460123540726",
+      "solution": "RLRLDDDDRLRLUUUURLDDRLRLRLUUDDDDDDRLUUUUUURLDDRLDDRLUURLUUDDRLDDRLUURLUU",
+      "seed": "hard/g1/3"
+    },
+    {
+      "id": "hard-07",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 3,
+      "cells": "533143065173214771003225217506441655202106377540777306665144522363244610",
+      "solution": "DRLRLDDDUDRLDUUUDURLUDRLURLRLURLDDDDRLRLUUUUDDDDRLDDUUUURLUUDRLDRLRLURLU",
+      "seed": "hard/g1/0"
+    },
+    {
+      "id": "hard-08",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 3,
+      "cells": "075270436466545517740224106414110031322753273255134057036357760122134666",
+      "solution": "DDDDRLRLUUUURLRLDRLDRLDDUDDUDDUUDUUDUUDDURLUDDUUDDRLUURLUUDDRLRLRLUURLRL",
+      "seed": "hard/g1/5"
+    },
+    {
+      "id": "hard-09",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 3,
+      "cells": "206223755051437566653302407341317162474577174540221461602063013201437565",
+      "solution": "DDRLDRLDUURLUDDURLDRLUUDRLUDDRLUDRLUURLDUDRLDRLUDURLUDDDURLRLUUURLRLRLRL",
+      "seed": "hard/g1/7"
+    },
+    {
+      "id": "hard-10",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 3,
+      "cells": "761440203125677155466211334004077466506372213243713515077355220654620341",
+      "solution": "RLDDDRLDRLUUURLURLDRLDRLRLURLURLRLDDRLRLRLUURLDDRLRLRLUUDDDDRLRLUUUURLRL",
+      "seed": "hard/g1/8"
+    },
+    {
+      "id": "hard-11",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 3,
+      "cells": "332207201403242003141563460727134672451565751146375504357627542306110667",
+      "solution": "DDDDRLDDUUUURLUURLDDRLDDDDUURLUUUUDDRLDDDDUURLUUUURLRLRLRLDDDDDDRLUUUUUU",
+      "seed": "hard/g1/10"
+    },
+    {
+      "id": "hard-12",
+      "difficulty": "hard",
+      "order": 7,
+      "rows": 9,
+      "cols": 8,
+      "grade": 3,
+      "cells": "675401756161012344534377275322165005150721371263663230402435126054674407",
+      "solution": "DDDDRLDDUUUUDDUUDDDDUURLUUUURLRLRLDDDDDDRLUUUUUUDRLRLDDDURLRLUUURLRLRLRL",
+      "seed": "hard/g1/4"
+    }
+  ]
+}

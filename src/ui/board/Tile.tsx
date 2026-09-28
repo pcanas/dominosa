@@ -6,8 +6,12 @@ import { useTheme } from '@/ui/theme';
 
 import type { Rect } from './geometry';
 
-/** `ghost`: preview while dragging; `blocked`: preview over a wall, where the domino cannot go. */
-export type TileVariant = 'placed' | 'duplicate' | 'solved' | 'ghost' | 'blocked';
+/**
+ * `ghost`: preview while dragging; `blocked`: preview over a wall, where the
+ * domino cannot go; `hint`: a free slot for the pair picked in the tracker;
+ * `highlighted`: a placed domino of that pair.
+ */
+export type TileVariant = 'placed' | 'duplicate' | 'solved' | 'ghost' | 'blocked' | 'hint' | 'highlighted';
 
 interface TileProps {
   readonly rect: Rect;
@@ -21,7 +25,8 @@ const INSET = 1;
 /** A domino covering two cells. Numbers are drawn by the board on top of it. */
 export function Tile({ rect, variant, cell }: TileProps) {
   const { palette } = useTheme();
-  const preview = variant === 'ghost' || variant === 'blocked';
+  const preview = variant === 'ghost' || variant === 'blocked' || variant === 'hint';
+  const emphasis = variant === 'hint' || variant === 'highlighted';
   const scale = useSharedValue(preview ? 1 : 0.86);
 
   useEffect(() => {
@@ -38,6 +43,8 @@ export function Tile({ rect, variant, cell }: TileProps) {
     solved: { fill: palette.successSoft, border: palette.success, divider: palette.success },
     ghost: { fill: 'transparent', border: palette.textSecondary, divider: 'transparent' },
     blocked: { fill: 'transparent', border: palette.accent, divider: 'transparent' },
+    hint: { fill: palette.successSoft, border: palette.success, divider: 'transparent' },
+    highlighted: { fill: palette.tile, border: palette.success, divider: palette.tileBorder },
   }[variant];
   const radius = Math.round(cell * 0.24);
   const badge = Math.max(14, Math.round(cell * 0.32));
@@ -56,6 +63,7 @@ export function Tile({ rect, variant, cell }: TileProps) {
           backgroundColor: colors.fill,
           borderColor: colors.border,
           borderStyle: preview ? 'dashed' : 'solid',
+          borderWidth: emphasis ? 2.5 : 1.5,
           boxShadow: preview ? undefined : '0px 1px 2px rgba(74, 63, 53, 0.18)',
         },
         animated,
@@ -83,7 +91,6 @@ export function Tile({ rect, variant, cell }: TileProps) {
 const styles = StyleSheet.create({
   tile: {
     position: 'absolute',
-    borderWidth: 1.5,
   },
   dividerVertical: {
     position: 'absolute',

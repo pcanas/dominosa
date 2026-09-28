@@ -1,0 +1,138 @@
+{
+  "id": "easy",
+  "formatVersion": 1,
+  "levels": [
+    {
+      "id": "easy-01",
+      "difficulty": "easy",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 2,
+      "cells": "113200401402212244320431333014",
+      "solution": "RLRLDDDRLUUURLDDDRLUUUDRLRLURL",
+      "seed": "easy/g0/1"
+    },
+    {
+      "id": "easy-02",
+      "difficulty": "easy",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 2,
+      "cells": "042343401123114200021304423321",
+      "solution": "DDDRLUUURLDRLDDURLUUDDRLDUURLU",
+      "seed": "easy/g0/4"
+    },
+    {
+      "id": "easy-03",
+      "difficulty": "easy",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 2,
+      "cells": "121301243424300401214013433220",
+      "solution": "DDDRLUUURLRLDDDDDUUUUUDDDRLUUU",
+      "seed": "easy/g0/12"
+    },
+    {
+      "id": "easy-04",
+      "difficulty": "easy",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 2,
+      "cells": "000201122433330024243341112144",
+      "solution": "DRLDDURLUURLDRLRLURLDDDRLUUURL",
+      "seed": "easy/g0/13"
+    },
+    {
+      "id": "easy-05",
+      "difficulty": "easy",
+      "order": 5,
+      "rows": 7,
+      "cols": 6,
+      "grade": 1,
+      "cells": "320154231512034544401100020534523241531325",
+      "solution": "RLRLRLDDDDRLUUUURLRLRLRLDDDDRLUUUUDDRLRLUU",
+      "seed": "easy/g1/1"
+    },
+    {
+      "id": "easy-06",
+      "difficulty": "easy",
+      "order": 5,
+      "rows": 7,
+      "cols": 6,
+      "grade": 1,
+      "cells": "230033102525545013030045144125533141241224",
+      "solution": "RLRLRLDRLDDDURLUUUDRLRLDURLDDUDDDUUDUUURLU",
+      "seed": "easy/g1/2"
+    },
+    {
+      "id": "easy-07",
+      "difficulty": "easy",
+      "order": 5,
+      "rows": 7,
+      "cols": 6,
+      "grade": 1,
+      "cells": "325241051153422422330155104540104333254010",
+      "solution": "RLDDDDRLUUUURLDDRLRLUURLDDDDDDUUUUUURLRLRL",
+      "seed": "easy/g1/11"
+    },
+    {
+      "id": "easy-08",
+      "difficulty": "easy",
+      "order": 5,
+      "rows": 7,
+      "cols": 6,
+      "grade": 2,
+      "cells": "040251253304453001443522151541122330425130",
+      "solution": "DRLDDDUDDUUUDUURLDUDDRLUDUUDDDURLUUURLRLRL",
+      "seed": "easy/g2/0"
+    },
+    {
+      "id": "easy-09",
+      "difficulty": "easy",
+      "order": 5,
+      "rows": 7,
+      "cols": 6,
+      "grade": 2,
+      "cells": "010324210421105135445221353344002531532405",
+      "solution": "DDRLDDUURLUURLDDDDDDUUUUUURLRLRLRLRLRLRLRL",
+      "seed": "easy/g2/1"
+    },
+    {
+      "id": "easy-10",
+      "difficulty": "easy",
+      "order": 5,
+      "rows": 7,
+      "cols": 6,
+      "grade": 2,
+      "cells": "355034031143230341132500442125224110540255",
+      "solution": "RLRLRLDDRLDDUURLUUDRLDRLURLURLRLDDRLRLUURL",
+      "seed": "easy/g2/2"
+    },
+    {
+      "id": "easy-11",
+      "difficulty": "easy",
+      "order": 5,
+      "rows": 7,
+      "cols": 6,
+      "grade": 2,
+      "cells": "530005435543223122441350421504403113510122",
+      "solution": "DDRLDDUURLUUDRLDDDURLUUUDRLRLDURLRLURLRLRL",
+      "seed": "easy/g2/3"
+    },
+    {
+      "id": "easy-12",
+      "difficulty": "easy",
+      "order": 5,
+      "rows": 7,
+      "cols": 6,
+      "grade": 2,
+      "cells": "044324235154013235520011522154144100332530",
+      "solution": "DDDDDDUUUUUURLRLRLDDRLRLUURLDDRLDDUURLUURL",
+      "seed": "easy/g2/4"
+    }
+  ]
+}

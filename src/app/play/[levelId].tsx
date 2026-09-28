@@ -2,19 +2,22 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, StyleSheet, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, View } from 'react-native';
 
-import type { CellIndex } from '@/core';
+import { dominoId, dominoPips, type CellIndex, type DominoId } from '@/core';
 import {
   boardStatus,
   canUndo,
   createGame,
   isBlank,
   isSolved,
+  pairSlots,
   placedTiles,
+  trackPairs,
   wallPairs,
   type BoardStatus,
   type GameAction,
+  type PairSlots,
 } from '@/game';
 import { formatDuration, useStrings, type Strings } from '@/i18n';
 import { getLevel, LEVELS, nextLevel, type Level } from '@/levels';
@@ -34,6 +37,7 @@ import { IconButton } from '@/ui/components/IconButton';
 import { NotFound } from '@/ui/components/NotFound';
 import { Screen } from '@/ui/components/Screen';
 import { spacing, useTheme } from '@/ui/theme';
+import { PairTracker } from '@/ui/tracker/PairTracker';
 
 /** Pre-render one page per bundled level for the static web build. */
 export function generateStaticParams(): { levelId: string }[] {
@@ -43,7 +47,7 @@ export function generateStaticParams(): { levelId: string }[] {
 export default function PlayRoute() {
   const { levelId } = useLocalSearchParams<{ levelId: string }>();
   const level = getLevel(levelId);
-  // Keyed by level so per-level UI state (wall button, reset confirmation) starts fresh.
+  // Keyed by level so per-level UI state (wall button, tracker, reset confirmation) starts fresh.
   return level ? <PlayScreen key={level.id} level={level} /> : <NotFound />;
 }
 
@@ -60,6 +64,9 @@ function PlayScreen({ level }: { readonly level: Level }) {
   // Saved games load asynchronously; opening waits so a saved board is never missed.
   const savedGamesReady = useSavedGamesStore((s) => s.ready);
   const [wallButton, setWallButton] = useState<WallButton>(WALL_BUTTON_OFF);
+  const [trackerOpen, setTrackerOpen] = useState(false);
+  /** Pair picked in the tracker: its free slots are shown on the board. */
+  const [selectedPair, setSelectedPair] = useState<DominoId | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,6 +97,9 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const solved = isSolved(game);
   const status = boardStatus(game);
   const next = nextLevel(level.id);
+  const { order } = level.puzzle;
+  const highlight = selectedPair !== null && !solved ? pairSlots(game, selectedPair) : null;
+  const packName = t.packs[level.packId] ?? level.packId;
 
   const act = (action: GameAction) => {
     const outcome = dispatch(action);
@@ -100,7 +110,25 @@ function PlayScreen({ level }: { readonly level: Level }) {
     else if (outcome === 'solved') haptics.solved();
     // A single-use wall mode ends with the wall it was armed for; a solve ends any mode.
     if (outcome === 'wallAdded') setWallButton(afterWallDrawn);
-    if (outcome === 'solved') setWallButton(WALL_BUTTON_OFF);
+    if (outcome === 'solved') {
+      setWallButton(WALL_BUTTON_OFF);
+      setTrackerOpen(false);
+      setSelectedPair(null);
+    }
+    // Placing the pair picked in the tracker is what the highlight was for.
+    if (outcome === 'placed' && action.type === 'place' && selectedPair !== null) {
+      const cells = level.puzzle.cells;
+      if (dominoId(cells[action.a]!, cells[action.b]!, order) === selectedPair) setSelectedPair(null);
+    }
+  };
+
+  const onSelectPair = (domino: DominoId) => {
+    if (domino === selectedPair) {
+      setSelectedPair(null);
+      return;
+    }
+    setSelectedPair(domino);
+    setTrackerOpen(false);
   };
 
   const onReset = () => {
@@ -114,7 +142,10 @@ function PlayScreen({ level }: { readonly level: Level }) {
     act({ type: 'reset' });
   };
 
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  const goBack = () =>
+    router.canGoBack()
+      ? router.back()
+      : router.replace({ pathname: '/pack/[packId]', params: { packId: level.packId } });
   const goNext = () =>
     next
       ? router.replace({ pathname: '/play/[levelId]', params: { levelId: next.id } })
@@ -123,7 +154,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
   return (
     <Screen gutter={spacing.sm}>
       <Head>
-        <title>{`${t.levelNumber(level.number)} · ${t.appName}`}</title>
+        <title>{`${packName} · ${t.levelNumber(level.number)} · ${t.appName}`}</title>
       </Head>
       <View style={styles.topBar}>
         <IconButton icon="chevron-back" label={t.actions.back} onPress={goBack} />
@@ -132,13 +163,24 @@ function PlayScreen({ level }: { readonly level: Level }) {
             {t.levelNumber(level.number)}
           </AppText>
           <AppText variant="caption" tone="secondary">
-            {t.difficulty[level.difficulty]} · {t.gridSize(level.puzzle.cols, level.puzzle.rows)}
+            {packName} · {t.gridSize(level.puzzle.cols, level.puzzle.rows)}
           </AppText>
         </View>
         <View style={styles.topBarSpacer} />
       </View>
 
-      <StatusLine status={status} wallMode={wallButton.mode} solvedInMs={session?.solvedInMs ?? null} t={t} />
+      <StatusLine
+        status={status}
+        wallMode={wallButton.mode}
+        pair={
+          highlight && selectedPair !== null
+            ? { label: pairLabel(selectedPair, order), slots: highlight }
+            : null
+        }
+        onClearPair={() => setSelectedPair(null)}
+        solvedInMs={session?.solvedInMs ?? null}
+        t={t}
+      />
 
       <Board
         puzzle={level.puzzle}
@@ -150,6 +192,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
         onWall={(a: CellIndex, b: CellIndex) => act({ type: 'addWall', a, b })}
         onRemove={(cell: CellIndex) => act({ type: 'remove', cell })}
         onRemoveWall={(a: CellIndex, b: CellIndex) => act({ type: 'removeWall', a, b })}
+        highlight={highlight}
       />
 
       <View style={styles.toolbar}>
@@ -183,6 +226,13 @@ function PlayScreen({ level }: { readonly level: Level }) {
               showLabel
             />
             <IconButton
+              icon="grid-outline"
+              label={t.actions.pairs}
+              onPress={() => setTrackerOpen((open) => !open)}
+              selected={trackerOpen}
+              showLabel
+            />
+            <IconButton
               icon="refresh"
               label={confirmingReset ? t.actions.confirmReset : t.actions.reset}
               onPress={onReset}
@@ -193,23 +243,49 @@ function PlayScreen({ level }: { readonly level: Level }) {
           </>
         )}
       </View>
+
+      {trackerOpen && !solved && (
+        <PairTracker
+          order={order}
+          pairs={trackPairs(game)}
+          selected={selectedPair}
+          onSelect={onSelectPair}
+          onClose={() => setTrackerOpen(false)}
+        />
+      )}
     </Screen>
   );
+}
+
+/** "3–5" for a domino. */
+function pairLabel(domino: DominoId, order: number): string {
+  const [lo, hi] = dominoPips(domino, order);
+  return `${lo}–${hi}`;
+}
+
+interface SelectedPair {
+  readonly label: string;
+  readonly slots: PairSlots;
 }
 
 function StatusLine({
   status,
   wallMode,
+  pair,
+  onClearPair,
   solvedInMs,
   t,
 }: {
   readonly status: BoardStatus;
   readonly wallMode: WallMode;
+  readonly pair: SelectedPair | null;
+  readonly onClearPair: () => void;
   readonly solvedInMs: number | null;
   readonly t: Strings;
 }) {
   const { palette } = useTheme();
-  const { text, tone, icon } = describeStatus(status, wallMode, solvedInMs, t);
+  const { text, tone, icon } = describeStatus(status, wallMode, pair, solvedInMs, t);
+  const showClear = pair !== null && status.kind !== 'solved';
   return (
     <View style={styles.status} accessibilityLiveRegion="polite">
       {icon && (
@@ -226,6 +302,16 @@ function StatusLine({
         style={styles.statusText}>
         {text}
       </AppText>
+      {showClear && (
+        <Pressable
+          onPress={onClearPair}
+          accessibilityRole="button"
+          accessibilityLabel={t.a11y.clearPair}
+          hitSlop={12}
+          style={styles.clear}>
+          <Ionicons name="close-circle" size={20} color={palette.textSecondary} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -233,13 +319,22 @@ function StatusLine({
 function describeStatus(
   status: BoardStatus,
   wallMode: WallMode,
+  pair: SelectedPair | null,
   solvedInMs: number | null,
   t: Strings,
 ): {
   text: string;
   tone: 'secondary' | 'accent' | 'success';
-  icon: 'alert-circle' | 'checkmark-circle' | 'ban-outline' | 'lock-closed-outline' | null;
+  icon: 'alert-circle' | 'checkmark-circle' | 'ban-outline' | 'lock-closed-outline' | 'search' | null;
 } {
+  // A pair picked in the tracker: say where it can go (the board shows it too).
+  if (pair && status.kind !== 'solved') {
+    const { label, slots } = pair;
+    if (slots.placed.length > 0) return { text: t.status.pairPlaced(label), tone: 'success', icon: 'search' };
+    if (slots.open.length === 0)
+      return { text: t.status.pairNone(label), tone: 'accent', icon: 'alert-circle' };
+    return { text: t.status.pairOpen(label, slots.open.length), tone: 'secondary', icon: 'search' };
+  }
   // Wall mode is worth a reminder, but never hides a warning or the solve.
   if (wallMode !== 'off' && (status.kind === 'empty' || status.kind === 'progress')) {
     return wallMode === 'locked'
@@ -279,6 +374,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   statusText: { textAlign: 'center', flexShrink: 1 },
+  clear: { padding: 2 },
   toolbar: {
     flexDirection: 'row',
     justifyContent: 'center',

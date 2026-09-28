@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 
 import { makePair, type CellIndex, type Pair, type Puzzle } from '@/core';
-import type { PlacedTile } from '@/game';
+import type { PairSlots, PlacedTile } from '@/game';
 import { useStrings } from '@/i18n';
 import { fonts, radius, useTheme } from '@/ui/theme';
 
@@ -34,6 +34,8 @@ interface BoardProps {
   readonly onRemove: (cell: CellIndex) => void;
   /** A tap on (or near) a wall. */
   readonly onRemoveWall: (a: CellIndex, b: CellIndex) => void;
+  /** Slots of the pair picked in the tracker, shown on the board. */
+  readonly highlight?: PairSlots | null;
 }
 
 /**
@@ -50,6 +52,7 @@ export function Board({
   onWall,
   onRemove,
   onRemoveWall,
+  highlight = null,
 }: BoardProps) {
   const { palette } = useTheme();
   const t = useStrings();
@@ -72,6 +75,7 @@ export function Board({
       metrics && tapTargetAt(metrics, x, y, { hasWall: walled, isCovered: (cell) => coveredCells.has(cell) }),
   });
   const pressedWall = drag?.press?.kind === 'wall' ? pairKey(drag.press) : null;
+  const highlightedKeys = new Set(highlight?.placed.map(pairKey) ?? []);
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -122,11 +126,29 @@ export function Board({
               );
             })}
 
+            {!solved &&
+              highlight?.open.map((slot) => (
+                <Tile
+                  key={`hint-${slot.a}-${slot.b}`}
+                  rect={pairRect(metrics, slot.a, slot.b)}
+                  variant="hint"
+                  cell={metrics.cell}
+                />
+              ))}
+
             {tiles.map((tile) => (
               <Tile
                 key={`tile-${tile.a}-${tile.b}`}
                 rect={pairRect(metrics, tile.a, tile.b)}
-                variant={solved ? 'solved' : tile.duplicate ? 'duplicate' : 'placed'}
+                variant={
+                  solved
+                    ? 'solved'
+                    : tile.duplicate
+                      ? 'duplicate'
+                      : highlightedKeys.has(pairKey(tile))
+                        ? 'highlighted'
+                        : 'placed'
+                }
                 cell={metrics.cell}
               />
             ))}
