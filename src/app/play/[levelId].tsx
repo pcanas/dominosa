@@ -2,23 +2,33 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { AppState, StyleSheet, View } from 'react-native';
 
 import type { CellIndex } from '@/core';
 import {
   boardStatus,
   canUndo,
   createGame,
+  isBlank,
   isSolved,
   placedTiles,
+  wallPairs,
   type BoardStatus,
   type GameAction,
 } from '@/game';
 import { formatDuration, useStrings, type Strings } from '@/i18n';
 import { getLevel, LEVELS, nextLevel, type Level } from '@/levels';
 import { haptics } from '@/platform/haptics';
+import { useSavedGamesStore } from '@/state/saved-games-store';
 import { useSessionStore } from '@/state/session-store';
 import { Board } from '@/ui/board/Board';
+import {
+  afterWallDrawn,
+  tapWallButton,
+  WALL_BUTTON_OFF,
+  type WallButton,
+  type WallMode,
+} from '@/ui/board/wall-mode';
 import { AppText } from '@/ui/components/AppText';
 import { IconButton } from '@/ui/components/IconButton';
 import { NotFound } from '@/ui/components/NotFound';
@@ -33,7 +43,8 @@ export function generateStaticParams(): { levelId: string }[] {
 export default function PlayRoute() {
   const { levelId } = useLocalSearchParams<{ levelId: string }>();
   const level = getLevel(levelId);
-  return level ? <PlayScreen level={level} /> : <NotFound />;
+  // Keyed by level so per-level UI state (wall button, reset confirmation) starts fresh.
+  return level ? <PlayScreen key={level.id} level={level} /> : <NotFound />;
 }
 
 const RESET_CONFIRM_MS = 3000;
@@ -42,15 +53,30 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const t = useStrings();
   const open = useSessionStore((s) => s.open);
   const dispatch = useSessionStore((s) => s.dispatch);
+  const leave = useSessionStore((s) => s.leave);
+  const pause = useSessionStore((s) => s.pause);
+  const resume = useSessionStore((s) => s.resume);
   const session = useSessionStore((s) => (s.levelId === level.id ? s : null));
+  // Saved games load asynchronously; opening waits so a saved board is never missed.
+  const savedGamesReady = useSavedGamesStore((s) => s.ready);
+  const [wallButton, setWallButton] = useState<WallButton>(WALL_BUTTON_OFF);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const leave = useSessionStore((s) => s.leave);
   useEffect(() => {
+    if (!savedGamesReady) return;
     open(level);
     return () => leave(level.id);
-  }, [level, open, leave]);
+  }, [level, savedGamesReady, open, leave]);
+
+  // The clock only runs while the app is in front; going to the background also saves the game.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') resume();
+      else pause();
+    });
+    return () => subscription.remove();
+  }, [pause, resume]);
 
   useEffect(
     () => () => {
@@ -68,8 +94,13 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const act = (action: GameAction) => {
     const outcome = dispatch(action);
     if (outcome === 'placed') haptics.place();
-    else if (outcome === 'removed') haptics.remove();
+    else if (outcome === 'removed' || outcome === 'wallRemoved') haptics.remove();
+    else if (outcome === 'wallAdded') haptics.wall();
+    else if (outcome === 'blocked') haptics.blocked();
     else if (outcome === 'solved') haptics.solved();
+    // A single-use wall mode ends with the wall it was armed for; a solve ends any mode.
+    if (outcome === 'wallAdded') setWallButton(afterWallDrawn);
+    if (outcome === 'solved') setWallButton(WALL_BUTTON_OFF);
   };
 
   const onReset = () => {
@@ -107,14 +138,18 @@ function PlayScreen({ level }: { readonly level: Level }) {
         <View style={styles.topBarSpacer} />
       </View>
 
-      <StatusLine status={status} solvedInMs={session?.solvedInMs ?? null} t={t} />
+      <StatusLine status={status} wallMode={wallButton.mode} solvedInMs={session?.solvedInMs ?? null} t={t} />
 
       <Board
         puzzle={level.puzzle}
         tiles={placedTiles(game)}
+        walls={wallPairs(game)}
         solved={solved}
+        tool={wallButton.mode === 'off' ? 'domino' : 'wall'}
         onPlace={(a: CellIndex, b: CellIndex) => act({ type: 'place', a, b })}
+        onWall={(a: CellIndex, b: CellIndex) => act({ type: 'addWall', a, b })}
         onRemove={(cell: CellIndex) => act({ type: 'remove', cell })}
+        onRemoveWall={(a: CellIndex, b: CellIndex) => act({ type: 'removeWall', a, b })}
       />
 
       <View style={styles.toolbar}>
@@ -139,10 +174,19 @@ function PlayScreen({ level }: { readonly level: Level }) {
               showLabel
             />
             <IconButton
+              icon="ban-outline"
+              label={t.actions.wall}
+              accessibilityLabel={wallButton.mode === 'locked' ? t.a11y.wallLocked : t.actions.wall}
+              onPress={() => setWallButton((current) => tapWallButton(current, Date.now()))}
+              selected={wallButton.mode !== 'off'}
+              badge={wallButton.mode === 'locked' ? 'lock-closed' : undefined}
+              showLabel
+            />
+            <IconButton
               icon="refresh"
               label={confirmingReset ? t.actions.confirmReset : t.actions.reset}
               onPress={onReset}
-              disabled={status.kind === 'empty' && game.past.length === 0}
+              disabled={isBlank(game) && game.past.length === 0}
               tone={confirmingReset ? 'accent' : 'default'}
               showLabel
             />
@@ -155,19 +199,25 @@ function PlayScreen({ level }: { readonly level: Level }) {
 
 function StatusLine({
   status,
+  wallMode,
   solvedInMs,
   t,
 }: {
   readonly status: BoardStatus;
+  readonly wallMode: WallMode;
   readonly solvedInMs: number | null;
   readonly t: Strings;
 }) {
   const { palette } = useTheme();
-  const { text, tone, icon } = describeStatus(status, solvedInMs, t);
+  const { text, tone, icon } = describeStatus(status, wallMode, solvedInMs, t);
   return (
     <View style={styles.status} accessibilityLiveRegion="polite">
       {icon && (
-        <Ionicons name={icon} size={18} color={tone === 'success' ? palette.success : palette.accent} />
+        <Ionicons
+          name={icon}
+          size={18}
+          color={tone === 'success' ? palette.success : tone === 'accent' ? palette.accent : palette.wall}
+        />
       )}
       <AppText
         variant="label"
@@ -182,13 +232,20 @@ function StatusLine({
 
 function describeStatus(
   status: BoardStatus,
+  wallMode: WallMode,
   solvedInMs: number | null,
   t: Strings,
 ): {
   text: string;
   tone: 'secondary' | 'accent' | 'success';
-  icon: 'alert-circle' | 'checkmark-circle' | null;
+  icon: 'alert-circle' | 'checkmark-circle' | 'ban-outline' | 'lock-closed-outline' | null;
 } {
+  // Wall mode is worth a reminder, but never hides a warning or the solve.
+  if (wallMode !== 'off' && (status.kind === 'empty' || status.kind === 'progress')) {
+    return wallMode === 'locked'
+      ? { text: t.status.wallLocked, tone: 'secondary', icon: 'lock-closed-outline' }
+      : { text: t.status.wallOnce, tone: 'secondary', icon: 'ban-outline' };
+  }
   switch (status.kind) {
     case 'empty':
       return { text: t.status.start, tone: 'secondary', icon: null };
@@ -225,7 +282,7 @@ const styles = StyleSheet.create({
   toolbar: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.xxl,
+    gap: spacing.xl,
     paddingTop: spacing.md,
     paddingBottom: spacing.lg,
   },

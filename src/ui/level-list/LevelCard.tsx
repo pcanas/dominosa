@@ -10,22 +10,27 @@ import { radius, spacing, useTheme } from '@/ui/theme';
 interface LevelCardProps {
   readonly level: Level;
   readonly progress: LevelProgress | undefined;
+  /** Dominoes placed in a saved, unsolved game of this level. */
+  readonly inProgress?: { readonly placed: number; readonly total: number };
   readonly onPress: () => void;
 }
 
 /** One row of the level list: number, difficulty, size, deduction depth and status. */
-export function LevelCard({ level, progress, onPress }: LevelCardProps) {
+export function LevelCard({ level, progress, inProgress, onPress }: LevelCardProps) {
   const { palette } = useTheme();
   const t = useStrings();
   const { rows, cols } = level.puzzle;
   const solved = progress !== undefined;
   const title = `${t.levelNumber(level.number)} · ${t.difficulty[level.difficulty]}`;
+  const label = [title, solved && t.a11y.solvedLevel, inProgress && t.a11y.inProgressLevel]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={solved ? `${title}, ${t.a11y.solvedLevel}` : title}
+      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.card,
         {
@@ -46,6 +51,11 @@ export function LevelCard({ level, progress, onPress }: LevelCardProps) {
           {t.gridSize(cols, rows)}
           {progress ? ` · ${t.bestTime(formatDuration(progress.bestMs))}` : ''}
         </AppText>
+        {inProgress && (
+          <AppText variant="caption" tone="accent">
+            {t.inProgress(inProgress.placed, inProgress.total)}
+          </AppText>
+        )}
       </View>
       <DepthDots depth={level.grade} />
       <Ionicons name="chevron-forward" size={18} color={palette.textSecondary} />

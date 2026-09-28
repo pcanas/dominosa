@@ -7,9 +7,12 @@ import {
   coveredCellCount,
   createGame,
   gameReducer,
+  hasWall,
+  isBlank,
   isSolved,
   MAX_UNDO,
   placedTiles,
+  wallPairs,
   type GameAction,
   type GameState,
 } from '../game';
@@ -26,6 +29,10 @@ const puzzle = createPuzzle(1, 3, 2, [0, 1, 0, 1, 1, 0]);
 
 const play = (...actions: GameAction[]): GameState => actions.reduce(gameReducer, createGame(puzzle));
 const place = (a: number, b: number): GameAction => ({ type: 'place', a, b });
+const wall = (a: number, b: number): GameAction => ({ type: 'addWall', a, b });
+const unwall = (a: number, b: number): GameAction => ({ type: 'removeWall', a, b });
+const undo: GameAction = { type: 'undo' };
+const reset: GameAction = { type: 'reset' };
 
 describe('gameReducer', () => {
   it('starts empty', () => {
@@ -104,12 +111,90 @@ describe('gameReducer', () => {
     expect(isSolved(full)).toBe(false);
   });
 
+  it('keeps each undo step as a small diff', () => {
+    const game = play(place(0, 2), place(0, 1));
+    expect(game.past).toEqual([
+      { cells: [0, 2], partners: [-1, -1], walls: [] },
+      { cells: [0, 1, 2], partners: [2, -1, 0], walls: [] },
+    ]);
+  });
+
   it('caps the undo history', () => {
     let game = createGame(puzzle);
     for (let i = 0; i < MAX_UNDO + 20; i++) {
       game = gameReducer(game, i % 2 === 0 ? place(0, 2) : place(0, 1));
     }
     expect(game.past.length).toBe(MAX_UNDO);
+  });
+});
+
+describe('walls', () => {
+  it('adds a wall between adjacent cells, and undo takes it back', () => {
+    const game = play(wall(1, 0));
+    expect(hasWall(game, 0, 1)).toBe(true);
+    expect(wallPairs(game)).toEqual([{ a: 0, b: 1 }]);
+    expect(isBlank(game)).toBe(false);
+    expect(hasWall(gameReducer(game, undo), 0, 1)).toBe(false);
+  });
+
+  it('adding a wall that is already there changes nothing', () => {
+    const game = play(wall(0, 1));
+    expect(gameReducer(game, wall(1, 0))).toBe(game);
+  });
+
+  it('removes a wall, as an undoable step, and ignores walls that are not there', () => {
+    const game = play(wall(0, 1), unwall(1, 0));
+    expect(hasWall(game, 0, 1)).toBe(false);
+    expect(game.past).toHaveLength(2);
+    expect(hasWall(gameReducer(game, undo), 0, 1)).toBe(true);
+    expect(gameReducer(game, unwall(0, 1))).toBe(game);
+  });
+
+  it('ignores walls between cells that are not adjacent', () => {
+    const empty = createGame(puzzle);
+    for (const action of [wall(0, 3), wall(1, 2), wall(-1, 0), wall(5, 6), wall(2, 2), unwall(0, 3)]) {
+      expect(gameReducer(empty, action)).toBe(empty);
+    }
+  });
+
+  it('blocks placing a domino across a wall', () => {
+    const game = play(wall(0, 2));
+    expect(gameReducer(game, place(2, 0))).toBe(game);
+    // Other slots of the same cells are still free.
+    expect(play(wall(0, 2), place(0, 1)).partner).toEqual([1, 0, -1, -1, -1, -1]);
+  });
+
+  it('removes the domino lying where a wall is drawn, as one undoable step', () => {
+    const game = play(place(0, 2), wall(2, 0));
+    expect(coveredCellCount(game)).toBe(0);
+    expect(hasWall(game, 0, 2)).toBe(true);
+    expect(game.past.at(-1)).toEqual({ cells: [0, 2], partners: [2, 0], walls: [1] });
+    const back = gameReducer(game, undo);
+    expect(back.partner).toEqual([2, -1, 0, -1, -1, -1]);
+    expect(hasWall(back, 0, 2)).toBe(false);
+  });
+
+  it('keeps walls when neighbouring dominoes are replaced', () => {
+    const game = play(wall(0, 1), place(0, 2), place(2, 3));
+    expect(hasWall(game, 0, 1)).toBe(true);
+    expect(game.partner).toEqual([-1, -1, 3, 2, -1, -1]);
+  });
+
+  it('resets dominoes and walls together, and the reset can be undone', () => {
+    const game = play(place(0, 2), wall(1, 3), reset);
+    expect(isBlank(game)).toBe(true);
+    const back = gameReducer(game, undo);
+    expect(back.partner).toEqual([2, -1, 0, -1, -1, -1]);
+    expect(hasWall(back, 1, 3)).toBe(true);
+    const cleared = play(wall(0, 1), unwall(0, 1));
+    expect(gameReducer(cleared, reset)).toBe(cleared);
+  });
+
+  it('cannot change walls on a solved board', () => {
+    const solved = play(wall(0, 1), place(0, 2), place(1, 3), place(4, 5));
+    expect(isSolved(solved)).toBe(true);
+    expect(gameReducer(solved, wall(2, 3))).toBe(solved);
+    expect(gameReducer(solved, unwall(0, 1))).toBe(solved);
   });
 });
 

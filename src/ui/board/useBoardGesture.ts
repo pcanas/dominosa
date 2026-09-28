@@ -3,16 +3,19 @@ import { Gesture } from 'react-native-gesture-handler';
 
 import type { CellIndex } from '@/core';
 
-import { BoardInput } from './board-input';
-import type { BoardMetrics } from './geometry';
+import { BoardInput, TAP_MAX_MS, type BoardTool } from './board-input';
+import type { BoardMetrics, TapTarget } from './geometry';
 
-export type { DragState } from './board-input';
+export type { BoardTool, DragState } from './board-input';
 
 interface Options {
   readonly metrics: BoardMetrics | null;
   readonly enabled: boolean;
+  readonly tool: BoardTool;
   readonly onPlace: (a: CellIndex, b: CellIndex) => void;
-  readonly onTap: (cell: CellIndex) => void;
+  readonly onWall: (a: CellIndex, b: CellIndex) => void;
+  readonly onTap: (target: TapTarget) => void;
+  readonly hitTest: (x: number, y: number) => TapTarget | null;
 }
 
 /**
@@ -22,11 +25,11 @@ interface Options {
  * ghost only changes when the target cell changes, so this stays cheap and
  * behaves the same on iOS, Android and the web.
  */
-export function useBoardGesture({ metrics, enabled, onPlace, onTap }: Options) {
+export function useBoardGesture({ metrics, enabled, tool, onPlace, onWall, onTap, hitTest }: Options) {
   const [input] = useState(() => new BoardInput());
 
   useEffect(() => {
-    input.configure({ metrics, onPlace, onTap });
+    input.configure({ metrics, tool, onPlace, onWall, onTap, hitTest });
   });
 
   const drag = useSyncExternalStore(input.subscribe, input.getDrag, input.getDrag);
@@ -39,7 +42,10 @@ function createBoardGesture(input: BoardInput, enabled: boolean) {
     .runOnJS(true)
     .enabled(enabled)
     .minDistance(6)
+    // Touch-down (before the pan activates): remember the cell and what a tap would remove.
     .onBegin((e) => input.begin(e.x, e.y))
+    // The finger moved past `minDistance`: it is a swipe, not a tap.
+    .onStart(() => input.startSwipe())
     .onUpdate((e) => input.move(e.translationX, e.translationY))
     // `success` is false when the system cancels the touch (e.g. an iOS edge swipe): never place then.
     .onEnd((_e, success) => {
@@ -51,6 +57,7 @@ function createBoardGesture(input: BoardInput, enabled: boolean) {
     .runOnJS(true)
     .enabled(enabled)
     .maxDistance(10)
+    .maxDuration(TAP_MAX_MS)
     .onEnd((e, success) => {
       if (success) input.tap(e.x, e.y);
     });
