@@ -1,0 +1,109 @@
+# Publishes one commit of the web prototype to GitHub Pages.
+#
+# - Pushes to main call it from CI, so main is always what is live after a merge.
+# - Run it by hand to try a branch or commit on the phone before it reaches
+#   main: Actions → Deploy → Run workflow, leave "Use workflow from" on main and
+#   type the branch, tag or commit in "ref".
+#
+# Pages hosts a single site, so a manual deploy replaces what is live (for every
+# tester) until the next deploy; running it again with "main" puts main back.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Rama, tag o commit a publicar
+        required: true
+        default: main
+  workflow_call:
+    inputs:
+      ref:
+        description: Exact commit to publish
+        type: string
+        required: true
+      label:
+        description: Name shown next to the commit on the home screen (e.g. main)
+        type: string
+        default: ''
+      skip_checks:
+        description: The caller already ran the checks on this commit
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  EXPO_NO_TELEMETRY: 1
+
+jobs:
+  check:
+    if: ${{ !inputs.skip_checks }}
+    runs-on: ubuntu-latest
+    steps:
+      # The github-pages environment only accepts deployments started from main.
+      - name: Started from main
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Lanza Deploy con 'Use workflow from: main' y escribe la rama o el commit en 'ref'."
+          exit 1
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Typecheck, lint, format and tests, including the unique-solution guard on every level.
+      - run: npm run check
+
+  deploy:
+    needs: check
+    # After the checks pass, or straight away when the caller already ran them.
+    if: ${{ !cancelled() && (needs.check.result == 'success' || needs.check.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # One deployment at a time, and never cancel one halfway through.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      - id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Tells us where Pages serves the site: /<repo> for a project site, "" for
+      # a <user>.github.io repo or a custom domain.
+      - id: pages
+        uses: actions/configure-pages@v6
+      - run: npm run build:web
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_path }}
+          # Shown on the home screen, so testers can tell which build they are running.
+          EXPO_PUBLIC_COMMIT_SHA: ${{ steps.commit.outputs.sha }}
+          EXPO_PUBLIC_COMMIT_REF: ${{ inputs.label || inputs.ref }}
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v5
+      - name: Summary
+        env:
+          REF: ${{ inputs.label || inputs.ref }}
+          SHA: ${{ steps.commit.outputs.sha }}
+          URL: ${{ steps.deployment.outputs.page_url }}
+        run: echo "Publicado **${REF}** (\`${SHA:0:7}\`) en ${URL}" >> "$GITHUB_STEP_SUMMARY"

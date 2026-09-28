@@ -22,6 +22,17 @@ Este repo es el **hito 0** del plan: un prototipo jugable en el navegador, insta
 
 La ruta base (`BASE_URL`) la da GitHub Pages en el propio workflow, así que el repo puede llamarse como quieras y también funciona con dominio propio.
 
+### Probar una rama antes de `main`
+
+Los cambios van en una rama; `main` es siempre lo publicado.
+
+1. Sube la rama: `git push -u origin <rama>`.
+2. En GitHub: **Actions → Deploy → Run workflow**. Deja _Use workflow from_ en `main` y escribe la rama (o un commit o un tag) en **ref**. Pasa los checks y publica esa versión en la misma URL.
+3. En el iPhone, cierra la app y vuelve a abrirla para que coja la versión nueva.
+4. Si convence, abre un pull request y fusiónalo: al llegar a `main` se publica `main` otra vez. Si no, lanza **Deploy** con `main` para volver a lo que había.
+
+GitHub Pages tiene un solo sitio por repo, así que mientras pruebas una rama es lo que ve cualquiera que abra la URL. El workflow **Deploy** tiene que estar ya en `main` para aparecer en Actions, y siempre se lanza desde `main` (el entorno `github-pages` solo acepta despliegues iniciados ahí; qué se publica lo decide **ref**).
+
 ## Instalar en el iPhone
 
 1. Abre la URL en **Safari**.
