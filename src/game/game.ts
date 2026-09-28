@@ -45,8 +45,10 @@ export type GameAction =
   | { readonly type: 'place'; readonly a: CellIndex; readonly b: CellIndex }
   /** Remove the domino covering a cell. */
   | { readonly type: 'remove'; readonly cell: CellIndex }
-  /** Mark or unmark the edge between two adjacent cells as a wall; a domino lying there is removed. */
-  | { readonly type: 'toggleWall'; readonly a: CellIndex; readonly b: CellIndex }
+  /** Mark the edge between two adjacent cells as a wall; a domino lying there is removed. */
+  | { readonly type: 'addWall'; readonly a: CellIndex; readonly b: CellIndex }
+  /** Erase the wall between two adjacent cells. */
+  | { readonly type: 'removeWall'; readonly a: CellIndex; readonly b: CellIndex }
   | { readonly type: 'undo' }
   | { readonly type: 'reset' };
 
@@ -114,17 +116,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       next[other] = -1;
       return commit(state, next, state.walls);
     }
-    case 'toggleWall': {
+    case 'addWall': {
       const { a, b } = action;
       const edge = edgeOf(state, a, b);
-      if (edge < 0) return state;
+      if (edge < 0 || state.walls[edge]) return state;
       const walls = [...state.walls];
-      walls[edge] = !walls[edge];
+      walls[edge] = true;
       if (state.partner[a] !== b) return commit(state, state.partner, walls);
       const next = [...state.partner];
       next[a] = -1;
       next[b] = -1;
       return commit(state, next, walls);
+    }
+    case 'removeWall': {
+      const edge = edgeOf(state, action.a, action.b);
+      if (edge < 0 || !state.walls[edge]) return state;
+      const walls = [...state.walls];
+      walls[edge] = false;
+      return commit(state, state.partner, walls);
     }
     case 'undo': {
       const change = state.past[state.past.length - 1];

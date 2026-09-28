@@ -29,7 +29,8 @@ const puzzle = createPuzzle(1, 3, 2, [0, 1, 0, 1, 1, 0]);
 
 const play = (...actions: GameAction[]): GameState => actions.reduce(gameReducer, createGame(puzzle));
 const place = (a: number, b: number): GameAction => ({ type: 'place', a, b });
-const wall = (a: number, b: number): GameAction => ({ type: 'toggleWall', a, b });
+const wall = (a: number, b: number): GameAction => ({ type: 'addWall', a, b });
+const unwall = (a: number, b: number): GameAction => ({ type: 'removeWall', a, b });
 const undo: GameAction = { type: 'undo' };
 const reset: GameAction = { type: 'reset' };
 
@@ -128,18 +129,30 @@ describe('gameReducer', () => {
 });
 
 describe('walls', () => {
-  it('toggles a wall between adjacent cells, and undo takes it back', () => {
+  it('adds a wall between adjacent cells, and undo takes it back', () => {
     const game = play(wall(1, 0));
     expect(hasWall(game, 0, 1)).toBe(true);
     expect(wallPairs(game)).toEqual([{ a: 0, b: 1 }]);
     expect(isBlank(game)).toBe(false);
-    expect(hasWall(play(wall(0, 1), wall(0, 1)), 0, 1)).toBe(false);
     expect(hasWall(gameReducer(game, undo), 0, 1)).toBe(false);
+  });
+
+  it('adding a wall that is already there changes nothing', () => {
+    const game = play(wall(0, 1));
+    expect(gameReducer(game, wall(1, 0))).toBe(game);
+  });
+
+  it('removes a wall, as an undoable step, and ignores walls that are not there', () => {
+    const game = play(wall(0, 1), unwall(1, 0));
+    expect(hasWall(game, 0, 1)).toBe(false);
+    expect(game.past).toHaveLength(2);
+    expect(hasWall(gameReducer(game, undo), 0, 1)).toBe(true);
+    expect(gameReducer(game, unwall(0, 1))).toBe(game);
   });
 
   it('ignores walls between cells that are not adjacent', () => {
     const empty = createGame(puzzle);
-    for (const action of [wall(0, 3), wall(1, 2), wall(-1, 0), wall(5, 6), wall(2, 2)]) {
+    for (const action of [wall(0, 3), wall(1, 2), wall(-1, 0), wall(5, 6), wall(2, 2), unwall(0, 3)]) {
       expect(gameReducer(empty, action)).toBe(empty);
     }
   });
@@ -173,7 +186,7 @@ describe('walls', () => {
     const back = gameReducer(game, undo);
     expect(back.partner).toEqual([2, -1, 0, -1, -1, -1]);
     expect(hasWall(back, 1, 3)).toBe(true);
-    const cleared = play(wall(0, 1), wall(0, 1));
+    const cleared = play(wall(0, 1), unwall(0, 1));
     expect(gameReducer(cleared, reset)).toBe(cleared);
   });
 
@@ -181,6 +194,7 @@ describe('walls', () => {
     const solved = play(wall(0, 1), place(0, 2), place(1, 3), place(4, 5));
     expect(isSolved(solved)).toBe(true);
     expect(gameReducer(solved, wall(2, 3))).toBe(solved);
+    expect(gameReducer(solved, unwall(0, 1))).toBe(solved);
   });
 });
 

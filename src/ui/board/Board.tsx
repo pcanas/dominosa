@@ -7,7 +7,16 @@ import type { PlacedTile } from '@/game';
 import { useStrings } from '@/i18n';
 import { fonts, radius, useTheme } from '@/ui/theme';
 
-import { cellRect, computeMetrics, pairRect, wallRect, wallThickness, type BoardMetrics } from './geometry';
+import {
+  cellRect,
+  computeMetrics,
+  pairRect,
+  tapTargetAt,
+  wallRect,
+  wallThickness,
+  type BoardMetrics,
+  type TapTarget,
+} from './geometry';
 import { Tile } from './Tile';
 import { useBoardGesture, type BoardTool, type DragState } from './useBoardGesture';
 
@@ -17,38 +26,52 @@ interface BoardProps {
   /** Walled edges (top/left cell first). */
   readonly walls: readonly Pair[];
   readonly solved: boolean;
-  /** What a plain swipe does; holding before the swipe uses the other tool. */
+  /** What a swipe does: place a domino, or draw a wall while the wall button is on. */
   readonly tool: BoardTool;
   readonly onPlace: (a: CellIndex, b: CellIndex) => void;
   readonly onWall: (a: CellIndex, b: CellIndex) => void;
+  /** A tap on a domino. */
   readonly onRemove: (cell: CellIndex) => void;
-  /** The hold shortcut switched tools. */
-  readonly onHold?: (tool: BoardTool) => void;
+  /** A tap on (or near) a wall. */
+  readonly onRemoveWall: (a: CellIndex, b: CellIndex) => void;
 }
 
 /**
  * The playing board. Fills the space it is given and sizes cells to fit.
  * Layers, bottom to top: frame → cells → dominoes → walls → drag previews → numbers.
  */
-export function Board({ puzzle, tiles, walls, solved, tool, onPlace, onWall, onRemove, onHold }: BoardProps) {
+export function Board({
+  puzzle,
+  tiles,
+  walls,
+  solved,
+  tool,
+  onPlace,
+  onWall,
+  onRemove,
+  onRemoveWall,
+}: BoardProps) {
   const { palette } = useTheme();
   const t = useStrings();
   const [space, setSpace] = useState<{ width: number; height: number } | null>(null);
 
   const metrics = space ? computeMetrics(puzzle.rows, puzzle.cols, space.width, space.height, METRICS) : null;
+  const coveredCells = new Set(tiles.flatMap((tile) => [tile.a, tile.b]));
+  const wallKeys = new Set(walls.map(pairKey));
+  const walled = (a: CellIndex, b: CellIndex) => wallKeys.has(pairKey(makePair(a, b)));
+
   const { gesture, drag } = useBoardGesture({
     metrics,
     enabled: !solved,
     tool,
     onPlace,
     onWall,
-    onTap: onRemove,
-    onHold,
+    onTap: (target: TapTarget) =>
+      target.kind === 'wall' ? onRemoveWall(target.a, target.b) : onRemove(target.cell),
+    hitTest: (x, y) =>
+      metrics && tapTargetAt(metrics, x, y, { hasWall: walled, isCovered: (cell) => coveredCells.has(cell) }),
   });
-
-  const coveredCells = new Set(tiles.flatMap((tile) => [tile.a, tile.b]));
-  const wallKeys = new Set(walls.map(pairKey));
-  const walled = (a: CellIndex, b: CellIndex) => wallKeys.has(pairKey(makePair(a, b)));
+  const pressedWall = drag?.press?.kind === 'wall' ? pairKey(drag.press) : null;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -114,8 +137,9 @@ export function Board({ puzzle, tiles, walls, solved, tool, onPlace, onWall, onR
                   key={`wall-${wall.a}-${wall.b}`}
                   metrics={metrics}
                   pair={wall}
-                  // Swiping over an existing wall previews its removal.
-                  opacity={isDragOver(drag, 'wall', wall) ? 0.3 : 1}
+                  // A finger resting on a wall shows it will be removed when lifted.
+                  pressed={pairKey(wall) === pressedWall}
+                  opacity={1}
                 />
               ))}
 
@@ -129,6 +153,7 @@ export function Board({ puzzle, tiles, walls, solved, tool, onPlace, onWall, onR
             )}
 
             {drag?.tool === 'wall' &&
+              pressedWall === null &&
               wallPreviews(metrics, drag)
                 .filter((pair) => !walled(pair.a, pair.b))
                 .map((pair) => (
@@ -175,10 +200,13 @@ function WallBar({
   metrics,
   pair,
   opacity,
+  pressed = false,
 }: {
   readonly metrics: BoardMetrics;
   readonly pair: Pair;
   readonly opacity: number;
+  /** Terracotta while a resting finger would remove it. */
+  readonly pressed?: boolean;
 }) {
   const { palette } = useTheme();
   const thickness = wallThickness(metrics);
@@ -194,7 +222,7 @@ function WallBar({
           width: r.width,
           height: r.height,
           borderRadius: thickness / 2,
-          backgroundColor: palette.wall,
+          backgroundColor: pressed ? palette.accent : palette.wall,
           opacity,
         },
       ]}
@@ -218,15 +246,6 @@ function wallPreviews(m: BoardMetrics, drag: DragState): Pair[] {
     col < m.cols - 1 ? drag.start + 1 : -1,
   ];
   return neighbours.filter((n) => n >= 0).map((n) => makePair(drag.start, n));
-}
-
-function isDragOver(drag: DragState | null, tool: BoardTool, pair: Pair): boolean {
-  return (
-    drag !== null &&
-    drag.tool === tool &&
-    drag.target >= 0 &&
-    pairKey(makePair(drag.start, drag.target)) === pairKey(pair)
-  );
 }
 
 const pairKey = (pair: Pair) => `${pair.a}-${pair.b}`;

@@ -17,7 +17,8 @@ import { useProgressStore } from './progress-store';
 import { useSavedGamesStore } from './saved-games-store';
 
 /** What a dispatched action did, so the UI can pick the right feedback. */
-export type DispatchOutcome = 'unchanged' | 'blocked' | 'placed' | 'removed' | 'wall' | 'solved';
+export type DispatchOutcome =
+  'unchanged' | 'blocked' | 'placed' | 'removed' | 'wallAdded' | 'wallRemoved' | 'solved';
 
 interface SessionStore {
   readonly levelId: string | null;
@@ -132,7 +133,8 @@ export const useSessionStore = create<SessionStore>()((set, get) => {
       }
       persist();
 
-      if (action.type === 'toggleWall') return 'wall';
+      if (action.type === 'addWall') return 'wallAdded';
+      if (action.type === 'removeWall') return 'wallRemoved';
       return action.type === 'place' || coveredCellCount(next) > coveredCellCount(game)
         ? 'placed'
         : 'removed';

@@ -6,7 +6,7 @@ Prototipo jugable en el navegador, instalable en el iPhone como app web, con el 
 
 - 5 niveles en rampa de tamaño y profundidad de deducción: 4×5 (tutorial), 5×6, 7×8, 8×9 y 9×10 (experto).
 - Deslizar de una celda a su vecina para colocar (ficha fantasma mientras arrastras; si vuelves atrás, se cancela), tocar para quitar, colocar encima de otra ficha la reemplaza.
-- **Muros** (marcar que dos celdas no pueden ir juntas): botón "Muro" en la barra (en ese modo, deslizar pone o quita muros) o atajo sin cambiar de modo: mantener el dedo ~300 ms antes de deslizar usa la otra herramienta. Un muro impide colocar una ficha en ese hueco; poner un muro donde hay una ficha la quita.
+- **Muros** (marcar que dos celdas no pueden ir juntas): deslizar crea y tocar quita. El botón "Muro" funciona como la tecla de mayúsculas del iPhone: un toque vale para un muro (el modo se apaga al ponerlo), doble toque lo deja fijo (candado) hasta volver a tocarlo. Tocar un muro lo quita; su zona de toque es mucho mayor que la barra (hasta media celda si la celda está vacía, un cuarto si tiene ficha) y el muro se pone en terracota mientras el dedo está encima. Un muro impide colocar una ficha en ese hueco; poner un muro donde hay una ficha la quita.
 - Deshacer (hasta 500 pasos, muros incluidos), reiniciar con confirmación (borra fichas y muros), fichas repetidas en terracota con icono, verde salvia al resolver.
 - **Partidas guardadas:** cada nivel empezado se guarda en el dispositivo (fichas, muros, historial de deshacer y tiempo) y se retoma al volver, aunque se cierre la app. El reloj se para al salir del nivel o al pasar la app a segundo plano. En la lista, los niveles a medias muestran "En curso".
 - Progreso y mejor tiempo guardados en el dispositivo. Modo oscuro cálido. ES / EN / FR según el idioma del sistema.
@@ -88,7 +88,7 @@ Reglas que el lint hace cumplir: `core/` no importa nada de fuera (ni `Math.rand
 ## Qué validar
 
 - **El gesto:** ¿deslizar para colocar se siente natural? ¿Hay colocaciones accidentales? (Umbral: 35 % de la celda, en `src/ui/board/geometry.ts`.)
-- **Muros:** ¿se entienden el modo muro y el atajo de mantener? ¿Salen muros o fichas sin querer? (Tiempo de espera: `HOLD_MS` en `src/ui/board/board-input.ts`.)
+- **Muros:** ¿se entiende el botón (un toque, doble toque para fijar)? ¿Se quitan muros o fichas sin querer al tocar? (Zona de toque: `WALL_REACH_OVER_TILE` en `src/ui/board/geometry.ts`; doble toque: `DOUBLE_TAP_MS` en `src/ui/board/wall-mode.ts`.)
 - **Guardado:** cerrar la app a mitad de un nivel y volver: fichas, muros, deshacer y tiempo tienen que seguir igual.
 - **Tamaño máximo:** el 9×10 da celdas de ~34 pt en un iPhone de 390 pt de ancho. ¿Se juega bien o el límite debe ser 8×9?
 

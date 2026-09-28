@@ -105,9 +105,12 @@ describe('session store', () => {
 
   it('reports walls and placements blocked by a wall', () => {
     session().open(level);
-    expect(session().dispatch({ type: 'toggleWall', a: first.a, b: first.b })).toBe('wall');
+    expect(session().dispatch({ type: 'addWall', a: first.a, b: first.b })).toBe('wallAdded');
+    expect(session().dispatch({ type: 'addWall', a: first.a, b: first.b })).toBe('unchanged');
     expect(session().dispatch({ type: 'place', a: first.a, b: first.b })).toBe('blocked');
     expect(session().dispatch({ type: 'place', a: first.a, b: first.a })).toBe('unchanged');
+    expect(session().dispatch({ type: 'removeWall', a: first.a, b: first.b })).toBe('wallRemoved');
+    expect(session().dispatch({ type: 'place', a: first.a, b: first.b })).toBe('placed');
   });
 
   it('saves the game on every change and restores it after a restart, with undo and time', () => {
@@ -115,7 +118,7 @@ describe('session store', () => {
     vi.advanceTimersByTime(20_000);
     session().dispatch({ type: 'place', a: first.a, b: first.b });
     const second = pairs[1]!;
-    session().dispatch({ type: 'toggleWall', a: second.a, b: second.b });
+    session().dispatch({ type: 'addWall', a: second.a, b: second.b });
     expect(savedGame()?.past).toHaveLength(2);
 
     vi.advanceTimersByTime(7_000);

@@ -26,7 +26,7 @@ const other = createPuzzle(1, 3, 2, [1, 0, 1, 0, 0, 1]);
 
 const play = (...actions: GameAction[]): GameState => actions.reduce(gameReducer, createGame(puzzle));
 const place = (a: number, b: number): GameAction => ({ type: 'place', a, b });
-const wall = (a: number, b: number): GameAction => ({ type: 'toggleWall', a, b });
+const wall = (a: number, b: number): GameAction => ({ type: 'addWall', a, b });
 const now = new Date('2026-09-28T10:00:00Z');
 
 /** Saved game as it comes back from storage. */

@@ -18,6 +18,10 @@ interface IconButtonProps {
   readonly tone?: 'default' | 'accent' | 'primary';
   /** For toggles: shown filled and announced as selected while on. */
   readonly selected?: boolean;
+  /** Small icon on the button's corner (e.g. a lock for a toggle kept on). */
+  readonly badge?: IconName;
+  /** Spoken label when it differs from the visible one. */
+  readonly accessibilityLabel?: string;
 }
 
 /** Round icon button with an optional caption; at least 44 pt to hit comfortably. */
@@ -29,6 +33,8 @@ export function IconButton({
   showLabel = false,
   tone = 'default',
   selected,
+  badge,
+  accessibilityLabel,
 }: IconButtonProps) {
   const { palette } = useTheme();
   const filled = tone === 'primary' || selected === true;
@@ -39,7 +45,7 @@ export function IconButton({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={selected === undefined ? { disabled } : { disabled, selected }}
       hitSlop={6}
       style={({ pressed }) => [styles.root, disabled && styles.disabled, pressed && styles.pressed]}>
@@ -54,6 +60,12 @@ export function IconButton({
               },
             ]}>
             <Ionicons name={icon} size={22} color={iconColor} />
+            {badge && (
+              <View
+                style={[styles.badge, { backgroundColor: palette.accent, borderColor: palette.background }]}>
+                <Ionicons name={badge} size={11} color={palette.background} />
+              </View>
+            )}
           </View>
           {showLabel && (
             <AppText
@@ -75,6 +87,17 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

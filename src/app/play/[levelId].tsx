@@ -22,7 +22,13 @@ import { haptics } from '@/platform/haptics';
 import { useSavedGamesStore } from '@/state/saved-games-store';
 import { useSessionStore } from '@/state/session-store';
 import { Board } from '@/ui/board/Board';
-import type { BoardTool } from '@/ui/board/useBoardGesture';
+import {
+  afterWallDrawn,
+  tapWallButton,
+  WALL_BUTTON_OFF,
+  type WallButton,
+  type WallMode,
+} from '@/ui/board/wall-mode';
 import { AppText } from '@/ui/components/AppText';
 import { IconButton } from '@/ui/components/IconButton';
 import { NotFound } from '@/ui/components/NotFound';
@@ -37,7 +43,7 @@ export function generateStaticParams(): { levelId: string }[] {
 export default function PlayRoute() {
   const { levelId } = useLocalSearchParams<{ levelId: string }>();
   const level = getLevel(levelId);
-  // Keyed by level so per-level UI state (tool, reset confirmation) starts fresh.
+  // Keyed by level so per-level UI state (wall button, reset confirmation) starts fresh.
   return level ? <PlayScreen key={level.id} level={level} /> : <NotFound />;
 }
 
@@ -53,7 +59,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const session = useSessionStore((s) => (s.levelId === level.id ? s : null));
   // Saved games load asynchronously; opening waits so a saved board is never missed.
   const savedGamesReady = useSavedGamesStore((s) => s.ready);
-  const [tool, setTool] = useState<BoardTool>('domino');
+  const [wallButton, setWallButton] = useState<WallButton>(WALL_BUTTON_OFF);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -88,10 +94,13 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const act = (action: GameAction) => {
     const outcome = dispatch(action);
     if (outcome === 'placed') haptics.place();
-    else if (outcome === 'removed') haptics.remove();
-    else if (outcome === 'wall') haptics.wall();
+    else if (outcome === 'removed' || outcome === 'wallRemoved') haptics.remove();
+    else if (outcome === 'wallAdded') haptics.wall();
     else if (outcome === 'blocked') haptics.blocked();
     else if (outcome === 'solved') haptics.solved();
+    // A single-use wall mode ends with the wall it was armed for; a solve ends any mode.
+    if (outcome === 'wallAdded') setWallButton(afterWallDrawn);
+    if (outcome === 'solved') setWallButton(WALL_BUTTON_OFF);
   };
 
   const onReset = () => {
@@ -129,18 +138,18 @@ function PlayScreen({ level }: { readonly level: Level }) {
         <View style={styles.topBarSpacer} />
       </View>
 
-      <StatusLine status={status} wallMode={tool === 'wall'} solvedInMs={session?.solvedInMs ?? null} t={t} />
+      <StatusLine status={status} wallMode={wallButton.mode} solvedInMs={session?.solvedInMs ?? null} t={t} />
 
       <Board
         puzzle={level.puzzle}
         tiles={placedTiles(game)}
         walls={wallPairs(game)}
         solved={solved}
-        tool={tool}
+        tool={wallButton.mode === 'off' ? 'domino' : 'wall'}
         onPlace={(a: CellIndex, b: CellIndex) => act({ type: 'place', a, b })}
-        onWall={(a: CellIndex, b: CellIndex) => act({ type: 'toggleWall', a, b })}
+        onWall={(a: CellIndex, b: CellIndex) => act({ type: 'addWall', a, b })}
         onRemove={(cell: CellIndex) => act({ type: 'remove', cell })}
-        onHold={() => haptics.hold()}
+        onRemoveWall={(a: CellIndex, b: CellIndex) => act({ type: 'removeWall', a, b })}
       />
 
       <View style={styles.toolbar}>
@@ -167,8 +176,10 @@ function PlayScreen({ level }: { readonly level: Level }) {
             <IconButton
               icon="ban-outline"
               label={t.actions.wall}
-              onPress={() => setTool((current) => (current === 'wall' ? 'domino' : 'wall'))}
-              selected={tool === 'wall'}
+              accessibilityLabel={wallButton.mode === 'locked' ? t.a11y.wallLocked : t.actions.wall}
+              onPress={() => setWallButton((current) => tapWallButton(current, Date.now()))}
+              selected={wallButton.mode !== 'off'}
+              badge={wallButton.mode === 'locked' ? 'lock-closed' : undefined}
               showLabel
             />
             <IconButton
@@ -193,7 +204,7 @@ function StatusLine({
   t,
 }: {
   readonly status: BoardStatus;
-  readonly wallMode: boolean;
+  readonly wallMode: WallMode;
   readonly solvedInMs: number | null;
   readonly t: Strings;
 }) {
@@ -221,17 +232,19 @@ function StatusLine({
 
 function describeStatus(
   status: BoardStatus,
-  wallMode: boolean,
+  wallMode: WallMode,
   solvedInMs: number | null,
   t: Strings,
 ): {
   text: string;
   tone: 'secondary' | 'accent' | 'success';
-  icon: 'alert-circle' | 'checkmark-circle' | 'ban-outline' | null;
+  icon: 'alert-circle' | 'checkmark-circle' | 'ban-outline' | 'lock-closed-outline' | null;
 } {
   // Wall mode is worth a reminder, but never hides a warning or the solve.
-  if (wallMode && (status.kind === 'empty' || status.kind === 'progress')) {
-    return { text: t.status.wallMode, tone: 'secondary', icon: 'ban-outline' };
+  if (wallMode !== 'off' && (status.kind === 'empty' || status.kind === 'progress')) {
+    return wallMode === 'locked'
+      ? { text: t.status.wallLocked, tone: 'secondary', icon: 'lock-closed-outline' }
+      : { text: t.status.wallOnce, tone: 'secondary', icon: 'ban-outline' };
   }
   switch (status.kind) {
     case 'empty':
