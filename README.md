@@ -31,7 +31,7 @@ Los cambios van en una rama; `main` es siempre lo publicado.
 
 1. Sube la rama: `git push -u origin <rama>`.
 2. En GitHub: **Actions → Deploy → Run workflow**. Deja _Use workflow from_ en `main` y escribe la rama (o un commit o un tag) en **ref**. Pasa los checks y publica esa versión en la misma URL.
-3. En el iPhone, cierra la app y vuelve a abrirla para que coja la versión nueva.
+3. En el iPhone, cierra la app y vuelve a abrirla para que coja la versión nueva. La pantalla de inicio muestra el commit y, si no es `main`, la rama (por ejemplo `Versión 0.2.0 · 1a2b3c4 · hito1-bloque1`).
 4. Si convence, abre un pull request y fusiónalo: al llegar a `main` se publica `main` otra vez. Si no, lanza **Deploy** con `main` para volver a lo que había.
 
 GitHub Pages tiene un solo sitio por repo, así que mientras pruebas una rama es lo que ve cualquiera que abra la URL. El workflow **Deploy** tiene que estar ya en `main` para aparecer en Actions, y siempre se lanza desde `main` (el entorno `github-pages` solo acepta despliegues iniciados ahí; qué se publica lo decide **ref**).
