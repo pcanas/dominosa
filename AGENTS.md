@@ -9,6 +9,7 @@ This is an Expo/React Native mobile application (Dominosa puzzle game). Prioriti
 - Levels are generated offline with `npm run levels` from `scripts/level-packs.ts`; never edit pack JSON by hand. The level test must keep passing (unique solution, stored solution, declared grade).
 - Code and comments in English; README in Spanish.
 - Run `npm run check` (typecheck, lint, format, tests) before declaring any task done.
+- Work on a branch, never straight on `main`: every push to `main` deploys to GitHub Pages. A branch is previewed with the manual **Deploy** workflow (`.github/workflows/deploy.yml`, input `ref`) and reaches `main` through a pull request.
 
 ## Expo has changed — do not trust your training data
 
