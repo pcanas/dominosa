@@ -19,6 +19,12 @@ export const haptics = {
   place: () => run(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
   /** A domino is removed or replaced. */
   remove: () => run(() => Haptics.selectionAsync()),
+  /** A wall mark is drawn or erased. */
+  wall: () => run(() => Haptics.selectionAsync()),
+  /** Holding before a swipe switched tools (domino ↔ wall). */
+  hold: () => run(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)),
+  /** A placement was refused because a wall is in the way. */
+  blocked: () => run(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
   /** The puzzle is solved. */
   solved: () => run(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
 };

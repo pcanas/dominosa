@@ -2,36 +2,53 @@ import { useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 
-import type { CellIndex, Puzzle } from '@/core';
+import { makePair, type CellIndex, type Pair, type Puzzle } from '@/core';
 import type { PlacedTile } from '@/game';
 import { useStrings } from '@/i18n';
 import { fonts, radius, useTheme } from '@/ui/theme';
 
-import { cellRect, computeMetrics, pairRect } from './geometry';
+import { cellRect, computeMetrics, pairRect, wallRect, wallThickness, type BoardMetrics } from './geometry';
 import { Tile } from './Tile';
-import { useBoardGesture } from './useBoardGesture';
+import { useBoardGesture, type BoardTool, type DragState } from './useBoardGesture';
 
 interface BoardProps {
   readonly puzzle: Puzzle;
   readonly tiles: readonly PlacedTile[];
+  /** Walled edges (top/left cell first). */
+  readonly walls: readonly Pair[];
   readonly solved: boolean;
+  /** What a plain swipe does; holding before the swipe uses the other tool. */
+  readonly tool: BoardTool;
   readonly onPlace: (a: CellIndex, b: CellIndex) => void;
+  readonly onWall: (a: CellIndex, b: CellIndex) => void;
   readonly onRemove: (cell: CellIndex) => void;
+  /** The hold shortcut switched tools. */
+  readonly onHold?: (tool: BoardTool) => void;
 }
 
 /**
  * The playing board. Fills the space it is given and sizes cells to fit.
- * Layers, bottom to top: frame → cells → dominoes → drag ghost → numbers.
+ * Layers, bottom to top: frame → cells → dominoes → walls → drag previews → numbers.
  */
-export function Board({ puzzle, tiles, solved, onPlace, onRemove }: BoardProps) {
+export function Board({ puzzle, tiles, walls, solved, tool, onPlace, onWall, onRemove, onHold }: BoardProps) {
   const { palette } = useTheme();
   const t = useStrings();
   const [space, setSpace] = useState<{ width: number; height: number } | null>(null);
 
   const metrics = space ? computeMetrics(puzzle.rows, puzzle.cols, space.width, space.height, METRICS) : null;
-  const { gesture, drag } = useBoardGesture({ metrics, enabled: !solved, onPlace, onTap: onRemove });
+  const { gesture, drag } = useBoardGesture({
+    metrics,
+    enabled: !solved,
+    tool,
+    onPlace,
+    onWall,
+    onTap: onRemove,
+    onHold,
+  });
 
   const coveredCells = new Set(tiles.flatMap((tile) => [tile.a, tile.b]));
+  const wallKeys = new Set(walls.map(pairKey));
+  const walled = (a: CellIndex, b: CellIndex) => wallKeys.has(pairKey(makePair(a, b)));
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -91,14 +108,37 @@ export function Board({ puzzle, tiles, solved, onPlace, onRemove }: BoardProps) 
               />
             ))}
 
-            {drag && drag.target >= 0 && (
+            {!solved &&
+              walls.map((wall) => (
+                <WallBar
+                  key={`wall-${wall.a}-${wall.b}`}
+                  metrics={metrics}
+                  pair={wall}
+                  // Swiping over an existing wall previews its removal.
+                  opacity={isDragOver(drag, 'wall', wall) ? 0.3 : 1}
+                />
+              ))}
+
+            {drag?.tool === 'domino' && drag.target >= 0 && (
               <Tile
                 key={`ghost-${drag.start}-${drag.target}`}
                 rect={pairRect(metrics, drag.start, drag.target)}
-                variant="ghost"
+                variant={walled(drag.start, drag.target) ? 'blocked' : 'ghost'}
                 cell={metrics.cell}
               />
             )}
+
+            {drag?.tool === 'wall' &&
+              wallPreviews(metrics, drag)
+                .filter((pair) => !walled(pair.a, pair.b))
+                .map((pair) => (
+                  <WallBar
+                    key={`wall-ghost-${pair.a}-${pair.b}`}
+                    metrics={metrics}
+                    pair={pair}
+                    opacity={drag.target >= 0 ? 0.7 : 0.45}
+                  />
+                ))}
 
             <View pointerEvents="none" style={StyleSheet.absoluteFill}>
               {puzzle.cells.map((pip, i) => {
@@ -131,6 +171,66 @@ export function Board({ puzzle, tiles, solved, onPlace, onRemove }: BoardProps) 
   );
 }
 
+function WallBar({
+  metrics,
+  pair,
+  opacity,
+}: {
+  readonly metrics: BoardMetrics;
+  readonly pair: Pair;
+  readonly opacity: number;
+}) {
+  const { palette } = useTheme();
+  const thickness = wallThickness(metrics);
+  const r = wallRect(metrics, pair.a, pair.b, thickness);
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.wall,
+        {
+          left: r.x,
+          top: r.y,
+          width: r.width,
+          height: r.height,
+          borderRadius: thickness / 2,
+          backgroundColor: palette.wall,
+          opacity,
+        },
+      ]}
+    />
+  );
+}
+
+/**
+ * Where a wall drag would draw: the picked edge, or — before a neighbour is
+ * picked — every edge of the start cell, so the player sees the wall tool is
+ * on even with a finger covering the cell.
+ */
+function wallPreviews(m: BoardMetrics, drag: DragState): Pair[] {
+  if (drag.target >= 0) return [makePair(drag.start, drag.target)];
+  const row = Math.floor(drag.start / m.cols);
+  const col = drag.start % m.cols;
+  const neighbours = [
+    row > 0 ? drag.start - m.cols : -1,
+    row < m.rows - 1 ? drag.start + m.cols : -1,
+    col > 0 ? drag.start - 1 : -1,
+    col < m.cols - 1 ? drag.start + 1 : -1,
+  ];
+  return neighbours.filter((n) => n >= 0).map((n) => makePair(drag.start, n));
+}
+
+function isDragOver(drag: DragState | null, tool: BoardTool, pair: Pair): boolean {
+  return (
+    drag !== null &&
+    drag.tool === tool &&
+    drag.target >= 0 &&
+    pairKey(makePair(drag.start, drag.target)) === pairKey(pair)
+  );
+}
+
+const pairKey = (pair: Pair) => `${pair.a}-${pair.b}`;
+
 /** 6-pt gaps as in the plan; tight frame so 9×10 still gets ~34-pt cells on a phone. */
 const METRICS = { gap: 6, padding: 6, maxCell: 84 } as const;
 
@@ -138,6 +238,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: { borderRadius: radius.lg },
   cell: { position: 'absolute', borderWidth: 1 },
+  wall: { position: 'absolute' },
   pip: {
     position: 'absolute',
     textAlign: 'center',

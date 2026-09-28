@@ -113,3 +113,33 @@ export function dragTarget(
   const r = row + Math.sign(dy);
   return r >= 0 && r < m.rows ? r * m.cols + col : -1;
 }
+
+/**
+ * Bar drawn in the gap between two adjacent cells to show a wall: centred on
+ * the gap, `thickness` across, `length` (a fraction of the cell) along it.
+ */
+export function wallRect(
+  m: BoardMetrics,
+  a: CellIndex,
+  b: CellIndex,
+  thickness: number,
+  length: number = WALL_LENGTH,
+): Rect {
+  const first = cellRect(m, Math.min(a, b));
+  const along = m.cell * length;
+  const inset = (m.cell - along) / 2;
+  const across = first.width + m.gap / 2 - thickness / 2;
+  // Neighbours in the same row share a vertical gap; neighbours in a column, a horizontal one.
+  const sameRow = Math.floor(a / m.cols) === Math.floor(b / m.cols);
+  return sameRow
+    ? { x: first.x + across, y: first.y + inset, width: thickness, height: along }
+    : { x: first.x + inset, y: first.y + across, width: along, height: thickness };
+}
+
+/** Fraction of the cell side a wall bar covers. */
+export const WALL_LENGTH = 0.72;
+
+/** Thickness of a wall bar: fits inside the gap, grows a little with the cell. */
+export function wallThickness(m: BoardMetrics): number {
+  return Math.max(2, Math.min(m.gap - 2, Math.round(m.cell * 0.1)));
+}

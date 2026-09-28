@@ -6,7 +6,8 @@ import { useTheme } from '@/ui/theme';
 
 import type { Rect } from './geometry';
 
-export type TileVariant = 'placed' | 'duplicate' | 'solved' | 'ghost';
+/** `ghost`: preview while dragging; `blocked`: preview over a wall, where the domino cannot go. */
+export type TileVariant = 'placed' | 'duplicate' | 'solved' | 'ghost' | 'blocked';
 
 interface TileProps {
   readonly rect: Rect;
@@ -20,7 +21,8 @@ const INSET = 1;
 /** A domino covering two cells. Numbers are drawn by the board on top of it. */
 export function Tile({ rect, variant, cell }: TileProps) {
   const { palette } = useTheme();
-  const scale = useSharedValue(variant === 'ghost' ? 1 : 0.86);
+  const preview = variant === 'ghost' || variant === 'blocked';
+  const scale = useSharedValue(preview ? 1 : 0.86);
 
   useEffect(() => {
     // Soft snap when the domino lands.
@@ -35,6 +37,7 @@ export function Tile({ rect, variant, cell }: TileProps) {
     duplicate: { fill: palette.accentSoft, border: palette.accent, divider: palette.accent },
     solved: { fill: palette.successSoft, border: palette.success, divider: palette.success },
     ghost: { fill: 'transparent', border: palette.textSecondary, divider: 'transparent' },
+    blocked: { fill: 'transparent', border: palette.accent, divider: 'transparent' },
   }[variant];
   const radius = Math.round(cell * 0.24);
   const badge = Math.max(14, Math.round(cell * 0.32));
@@ -52,8 +55,8 @@ export function Tile({ rect, variant, cell }: TileProps) {
           borderRadius: radius,
           backgroundColor: colors.fill,
           borderColor: colors.border,
-          borderStyle: variant === 'ghost' ? 'dashed' : 'solid',
-          boxShadow: variant === 'ghost' ? undefined : '0px 1px 2px rgba(74, 63, 53, 0.18)',
+          borderStyle: preview ? 'dashed' : 'solid',
+          boxShadow: preview ? undefined : '0px 1px 2px rgba(74, 63, 53, 0.18)',
         },
         animated,
       ]}>

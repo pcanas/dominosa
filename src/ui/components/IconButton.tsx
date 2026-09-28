@@ -16,6 +16,8 @@ interface IconButtonProps {
   /** Show the label under the icon (toolbar) or only use it for accessibility. */
   readonly showLabel?: boolean;
   readonly tone?: 'default' | 'accent' | 'primary';
+  /** For toggles: shown filled and announced as selected while on. */
+  readonly selected?: boolean;
 }
 
 /** Round icon button with an optional caption; at least 44 pt to hit comfortably. */
@@ -26,9 +28,10 @@ export function IconButton({
   disabled = false,
   showLabel = false,
   tone = 'default',
+  selected,
 }: IconButtonProps) {
   const { palette } = useTheme();
-  const filled = tone === 'primary';
+  const filled = tone === 'primary' || selected === true;
   const iconColor = filled ? palette.background : tone === 'accent' ? palette.accent : palette.text;
 
   return (
@@ -37,7 +40,7 @@ export function IconButton({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled }}
+      accessibilityState={selected === undefined ? { disabled } : { disabled, selected }}
       hitSlop={6}
       style={({ pressed }) => [styles.root, disabled && styles.disabled, pressed && styles.pressed]}>
       {({ pressed }) => (
@@ -53,7 +56,9 @@ export function IconButton({
             <Ionicons name={icon} size={22} color={iconColor} />
           </View>
           {showLabel && (
-            <AppText variant="caption" tone={tone === 'accent' ? 'accent' : 'secondary'}>
+            <AppText
+              variant="caption"
+              tone={tone === 'accent' ? 'accent' : selected ? 'primary' : 'secondary'}>
               {label}
             </AppText>
           )}

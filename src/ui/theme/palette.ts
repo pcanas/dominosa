@@ -20,6 +20,8 @@ export interface Palette {
   /** Sage: solved state. */
   readonly success: string;
   readonly successSoft: string;
+  /** Wall marks between cells: at least 3:1 against the board and the cells. */
+  readonly wall: string;
   /** Raised surfaces such as cards and toolbar buttons. */
   readonly surface: string;
   readonly surfacePressed: string;
@@ -38,6 +40,7 @@ export const palettes: Readonly<Record<'light' | 'dark', Palette>> = {
     accentSoft: '#F6E0D6',
     success: '#8FA58A',
     successSoft: '#E4ECE1',
+    wall: '#7A6A58',
     surface: '#FBF7F0',
     surfacePressed: '#EFE5D6',
   },
@@ -53,6 +56,7 @@ export const palettes: Readonly<Record<'light' | 'dark', Palette>> = {
     accentSoft: '#6E4A3D',
     success: '#9DB598',
     successSoft: '#4A5646',
+    wall: '#C9B9A5',
     surface: '#38312B',
     surfacePressed: '#433A33',
   },

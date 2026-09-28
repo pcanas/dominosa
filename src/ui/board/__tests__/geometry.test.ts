@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { cellAtPoint, cellRect, computeMetrics, dragTarget, pairRect } from '../geometry';
+import {
+  cellAtPoint,
+  cellRect,
+  computeMetrics,
+  dragTarget,
+  pairRect,
+  wallRect,
+  wallThickness,
+} from '../geometry';
 
 // 5 rows × 4 cols, cell 50, gap 6, padding 8 → width 8+4*50+3*6+8 = 234.
 const m = computeMetrics(5, 4, 234, 1000, { gap: 6, padding: 8, maxCell: 50 });
@@ -74,5 +82,21 @@ describe('dragTarget', () => {
     expect(dragTarget(m, 1, 0, -40)).toBe(-1); // top edge
     expect(dragTarget(m, 17, 0, 40)).toBe(-1); // bottom edge
     expect(dragTarget(m, -1, 40, 0)).toBe(-1);
+  });
+});
+
+describe('wallRect', () => {
+  it('centres a bar in the gap between two cells, whatever their order', () => {
+    // Cells 5 (64..114) and 6 (120..170) share the gap 114..120: centre 117.
+    expect(wallRect(m, 5, 6, 4, 0.8)).toEqual({ x: 115, y: 69, width: 4, height: 40 });
+    expect(wallRect(m, 6, 5, 4, 0.8)).toEqual(wallRect(m, 5, 6, 4, 0.8));
+    // Cells 5 and 9 (one row down) share the gap y 114..120.
+    expect(wallRect(m, 9, 5, 4, 0.8)).toEqual({ x: 69, y: 115, width: 40, height: 4 });
+  });
+
+  it('keeps the bar inside the gap', () => {
+    expect(wallThickness(m)).toBe(4);
+    expect(wallThickness(computeMetrics(10, 9, 358, 2000, { gap: 6, padding: 6 }))).toBeLessThanOrEqual(4);
+    expect(wallThickness({ ...m, cell: 10 })).toBe(2);
   });
 });

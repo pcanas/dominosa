@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { registerServiceWorker } from '@/platform/service-worker';
 import { useProgressStore } from '@/state/progress-store';
+import { useSavedGamesStore } from '@/state/saved-games-store';
 import { fontAssets, useTheme } from '@/ui/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -20,6 +21,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     void useProgressStore.persist.rehydrate();
+    void useSavedGamesStore.persist.rehydrate();
     registerServiceWorker();
   }, []);
 
