@@ -228,7 +228,7 @@ export function Board({
 
             {/*
               What screen readers see and touch: one transparent element per cell, drawn last so no
-              layer sits above it (VoiceOver's touch exploration did not reach cells under the numbers).
+              layer covers it (VoiceOver's touch exploration and its activation tap find the top view).
             */}
             {puzzle.cells.map((_pip, i) => {
               const r = cellRect(metrics, i);
