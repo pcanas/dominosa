@@ -1,9 +1,10 @@
 /**
- * Colour tokens. Light values come straight from the plan (section 7); dark is
- * a warm variant built around the plan's #2B2622 background.
+ * Colour tokens. Light values come from the plan (section 7), with the
+ * secondary text darkened from #8C7B68 to reach 4.5:1; dark is a warm variant
+ * built around the plan's #2B2622 background.
  *
- * Contrast (WCAG): `text` on `cell` and on `tile` is above 8:1 in both
- * schemes; `textSecondary` is only used for non-essential labels.
+ * Contrast (WCAG, checked by the palette test): `text` and `textSecondary`
+ * reach 4.5:1 on the background, surfaces and cells in both schemes.
  */
 export interface Palette {
   readonly background: string;
@@ -35,7 +36,7 @@ export const palettes: Readonly<Record<'light' | 'dark', Palette>> = {
     tile: '#FFFCF6',
     tileBorder: '#B9A58C',
     text: '#4A3F35',
-    textSecondary: '#8C7B68',
+    textSecondary: '#796957',
     accent: '#C8775A',
     accentSoft: '#F6E0D6',
     success: '#8FA58A',
