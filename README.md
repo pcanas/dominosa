@@ -46,11 +46,15 @@ GitHub Pages tiene un solo sitio por repo, así que mientras pruebas una rama es
 2. **Compartir → Añadir a pantalla de inicio**.
 3. Se abre a pantalla completa, como una app, y funciona sin conexión.
 
-Para probar la versión nativa sin compilar: `npm start` y escanea el QR con **Expo Go** (SDK 57), con el móvil y el ordenador en la misma red.
+Para probar la versión nativa sin compilar, con **Expo Go** (el de la App Store solo abre proyectos de la última SDK, ahora la 58):
+
+1. Crea una cuenta gratuita en expo.dev si no la tienes. En el iPhone, Expo Go exige iniciar sesión, con la misma cuenta en el móvil y en el ordenador.
+2. En el ordenador: `npx expo login` (una vez) y `npm start`.
+3. En Expo Go: toca el icono de la cuenta, arriba a la derecha, e inicia sesión. Escanea el QR con la cámara (o toca el servidor en la pestaña Home). El móvil y el ordenador tienen que estar en la misma red; si no se ven, `npm start -- --tunnel`.
 
 ## Desarrollo
 
-Requisitos: Node 20.19 o superior.
+Requisitos: Node 22.13 o superior (o 24.3+; las versiones impares no valen).
 
 ```sh
 npm install
