@@ -5,6 +5,7 @@ import { useSettingsStore } from '@/state/settings-store';
 
 import { DEFAULT_LOCALE, isLocale, STRINGS, type Locale, type Strings } from './strings';
 
+export { formatDuration } from './format';
 export { STRINGS, type Locale, type Strings } from './strings';
 
 /** First device language we support, or Spanish. */
@@ -33,14 +34,4 @@ export function useLocale(): Locale {
  */
 export function useStrings(): Strings {
   return STRINGS[useLocale()];
-}
-
-/** Formats milliseconds as m:ss (or h:mm:ss). */
-export function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const ss = String(s).padStart(2, '0');
-  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
 }

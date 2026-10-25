@@ -5,14 +5,14 @@ import {
   checkSolution,
   createPuzzle,
   decodeCells,
+  decodePartners,
   decodeSolution,
   encodeCells,
+  encodePartners,
   encodeSolution,
-  pairsToSolution,
-  solutionToPairs,
 } from '../puzzle';
 import { createRng } from '../rng';
-import { areAdjacent, getTopology } from '../topology';
+import { areAdjacent, getTopology, neighbourOf } from '../topology';
 import { ORDER1_UNIQUE, ORDER1_UNIQUE_SOLUTION } from './fixtures';
 
 describe('dominoes', () => {
@@ -102,14 +102,25 @@ describe('puzzle', () => {
     expect(() => decodeCells('01x')).toThrow(SyntaxError);
   });
 
-  it('converts between pairs and partner arrays', () => {
-    const pairs = solutionToPairs(ORDER1_UNIQUE_SOLUTION);
-    expect(pairs).toEqual([
-      { a: 0, b: 2 },
-      { a: 1, b: 3 },
-      { a: 4, b: 5 },
-    ]);
-    expect(pairsToSolution(pairs, 6)).toEqual(ORDER1_UNIQUE_SOLUTION);
+  it('encodes free cells and refuses partners that are not neighbours', () => {
+    expect(encodePartners([-1, -1, -1, -1, 5, 4], 2)).toBe('....RL');
+    expect(decodePartners('....RL', 2)).toEqual([-1, -1, -1, -1, 5, 4]);
+    expect(decodePartners('x', 2)).toEqual([Number.NaN]);
+    // Cells 2 and 3 sit at the end of one row and the start of the next.
+    expect(() => encodePartners([1, 0, 3, 2, 5, 4], 3)).toThrow(RangeError);
+    expect(() => encodeSolution([-1, -1, 3, 2, 5, 4], 2)).toThrow(RangeError);
+    expect(() => decodeSolution('..UURL', 2)).toThrow(SyntaxError);
+  });
+});
+
+describe('neighbourOf', () => {
+  it('finds the cell in each direction, or -1 at the edge', () => {
+    expect(neighbourOf(0, 'up', 3, 2)).toBe(-1);
+    expect(neighbourOf(0, 'left', 3, 2)).toBe(-1);
+    expect(neighbourOf(0, 'right', 3, 2)).toBe(1);
+    expect(neighbourOf(0, 'down', 3, 2)).toBe(2);
+    expect(neighbourOf(5, 'down', 3, 2)).toBe(-1);
+    expect(neighbourOf(1, 'right', 3, 2)).toBe(-1);
   });
 });
 

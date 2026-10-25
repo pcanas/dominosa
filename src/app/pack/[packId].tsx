@@ -8,9 +8,9 @@ import { useHydrated } from '@/platform/use-hydrated';
 import { useProgressStore } from '@/state/progress-store';
 import { useSavedGamesStore } from '@/state/saved-games-store';
 import { AppText } from '@/ui/components/AppText';
-import { IconButton } from '@/ui/components/IconButton';
 import { NotFound } from '@/ui/components/NotFound';
 import { Screen } from '@/ui/components/Screen';
+import { TopBar } from '@/ui/components/TopBar';
 import { LevelTile } from '@/ui/level-list/LevelTile';
 import { spacing } from '@/ui/theme';
 
@@ -44,22 +44,14 @@ function PackScreen({ pack }: { readonly pack: LevelPack }) {
       <Head>
         <title>{`${name} · ${t.appName}`}</title>
       </Head>
-      <View style={styles.topBar}>
-        <IconButton
-          icon="chevron-back"
-          label={t.actions.back}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        />
-        <View style={styles.titleBlock}>
-          <AppText variant="heading" accessibilityRole="header">
-            {name}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            {t.packSolved(solved, pack.levels.length)}
-          </AppText>
-        </View>
-        <View style={styles.topBarSpacer} />
-      </View>
+      <TopBar backTo="/">
+        <AppText variant="heading" accessibilityRole="header">
+          {name}
+        </AppText>
+        <AppText variant="caption" tone="secondary">
+          {t.packSolved(solved, pack.levels.length)}
+        </AppText>
+      </TopBar>
       <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
         {rows.map((row, r) => (
           <View key={r} style={styles.row}>
@@ -83,9 +75,6 @@ function PackScreen({ pack }: { readonly pack: LevelPack }) {
 }
 
 const styles = StyleSheet.create({
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.sm },
-  titleBlock: { flex: 1, alignItems: 'center' },
-  topBarSpacer: { minWidth: 64 },
   grid: { paddingVertical: spacing.xl, gap: spacing.md },
   row: { flexDirection: 'row', gap: spacing.md },
   pad: { flex: 1 },

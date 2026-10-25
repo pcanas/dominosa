@@ -3,16 +3,24 @@
  */
 export type { CellIndex, DominoId, Pair, Pip, Puzzle, Solution } from './types';
 export { dominoCount, dominoId, dominoPips, gridShape } from './dominoes';
-export { areAdjacent, getTopology, makePair, type Topology } from './topology';
+export {
+  areAdjacent,
+  DIRECTIONS,
+  getTopology,
+  makePair,
+  neighbourOf,
+  type Direction,
+  type Topology,
+} from './topology';
 export {
   checkSolution,
   createPuzzle,
   decodeCells,
+  decodePartners,
   decodeSolution,
   encodeCells,
+  encodePartners,
   encodeSolution,
-  pairsToSolution,
-  solutionToPairs,
   type SolutionCheck,
 } from './puzzle';
 export { createRng, type Rng } from './rng';

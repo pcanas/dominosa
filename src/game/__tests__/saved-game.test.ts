@@ -5,11 +5,9 @@ import { createPuzzle } from '@/core';
 import { createGame, gameReducer, isSolved, type GameAction, type GameState } from '../game';
 import {
   decodeBoard,
-  encodeBoard,
   restoreGame,
   sanitizeSavedGames,
   saveGame,
-  savedPlacedCount,
   withoutSavedGame,
   withSavedGame,
   type SavedGame,
@@ -106,16 +104,16 @@ describe('saveGame / restoreGame', () => {
 });
 
 describe('board encoding', () => {
-  it('writes one direction letter per cell', () => {
-    expect(encodeBoard([2, 3, 0, 1, 5, 4], 2)).toBe('DDUURL');
-    expect(encodeBoard([-1, -1, -1, -1, 5, 4], 2)).toBe('....RL');
+  it('stores one direction letter per cell, "." when free', () => {
+    expect(stored(play(place(0, 2), place(4, 5))).board).toBe('D.U.RL');
     expect(decodeBoard('DDUURL', 2, 6)).toEqual([2, 3, 0, 1, 5, 4]);
     expect(decodeBoard('......', 2, 6)).toEqual([-1, -1, -1, -1, -1, -1]);
   });
 
-  it('counts the dominoes of a saved game', () => {
-    expect(savedPlacedCount(stored(play(place(0, 2), place(4, 5))))).toBe(2);
-    expect(savedPlacedCount(stored(play(wall(0, 1))))).toBe(0);
+  it('rejects boards that are malformed or inconsistent', () => {
+    expect(decodeBoard('DDUURL', 2, 8)).toBeNull();
+    expect(decodeBoard('DDUURX', 2, 6)).toBeNull();
+    expect(decodeBoard('DDUUR.', 2, 6)).toBeNull();
   });
 });
 

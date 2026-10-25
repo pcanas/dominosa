@@ -84,8 +84,9 @@ src/
   platform/  Adaptadores: almacenamiento, vibración, lector de pantalla (detección
              y avisos), service worker, hidratación web.
   i18n/      Textos ES/EN/FR tipados.
-  ui/        Tema (paleta del plan), componentes, tablero, gestos y accesibilidad
-             del tablero (descripciones, acciones y avisos por celda).
+  ui/        Tema (paleta del plan), componentes, tablero, gestos, accesibilidad
+             del tablero (descripciones, acciones y avisos por celda) y piezas de
+             la pantalla de juego (línea de estado, reloj).
   app/       Rutas de Expo Router (inicio, /pack/[packId], /play/[levelId] y /settings).
 scripts/     Pipeline de niveles (Node) y post-proceso PWA.
 ```

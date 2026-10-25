@@ -2,7 +2,7 @@
  * Board layout and hit-testing math. Pure functions, independent of React, so
  * the gesture logic can be unit-tested and tuned without a device.
  */
-import { makePair, type CellIndex } from '@/core';
+import { DIRECTIONS, makePair, neighbourOf, type CellIndex, type Direction } from '@/core';
 
 export interface BoardMetrics {
   readonly rows: number;
@@ -172,23 +172,22 @@ export function tapTargetAt(m: BoardMetrics, x: number, y: number, ctx: TapConte
   const cell = cellAtPoint(m, x, y);
   if (cell < 0) return null;
   const r = cellRect(m, cell);
-  const row = Math.floor(cell / m.cols);
-  const col = cell % m.cols;
   const reach = ctx.isCovered(cell)
     ? Math.min(WALL_REACH_OVER_TILE_MAX, m.cell * WALL_REACH_OVER_TILE)
     : m.cell / 2;
 
   // Distance from the tap to each side of the cell (negative in the gap beyond it).
-  const sides = [
-    { neighbour: row > 0 ? cell - m.cols : -1, distance: y - r.y },
-    { neighbour: row < m.rows - 1 ? cell + m.cols : -1, distance: r.y + r.height - y },
-    { neighbour: col > 0 ? cell - 1 : -1, distance: x - r.x },
-    { neighbour: col < m.cols - 1 ? cell + 1 : -1, distance: r.x + r.width - x },
-  ];
+  const distance: Record<Direction, number> = {
+    up: y - r.y,
+    down: r.y + r.height - y,
+    left: x - r.x,
+    right: r.x + r.width - x,
+  };
   let best: { neighbour: CellIndex; distance: number } | null = null;
-  for (const side of sides) {
-    if (side.neighbour < 0 || side.distance > reach || !ctx.hasWall(cell, side.neighbour)) continue;
-    if (!best || side.distance < best.distance) best = side;
+  for (const dir of DIRECTIONS) {
+    const neighbour = neighbourOf(cell, dir, m.rows, m.cols);
+    if (neighbour < 0 || distance[dir] > reach || !ctx.hasWall(cell, neighbour)) continue;
+    if (!best || distance[dir] < best.distance) best = { neighbour, distance: distance[dir] };
   }
   if (!best) return { kind: 'cell', cell };
   return { kind: 'wall', ...makePair(cell, best.neighbour) };

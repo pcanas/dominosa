@@ -4,7 +4,15 @@
  * because stored data may come from an older build or from a level whose
  * content has changed since.
  */
-import { areAdjacent, encodeCells, getTopology, type CellIndex, type Puzzle } from '@/core';
+import {
+  areAdjacent,
+  decodePartners,
+  encodeCells,
+  encodePartners,
+  getTopology,
+  type CellIndex,
+  type Puzzle,
+} from '@/core';
 
 import { createGame, isSolved, MAX_UNDO, revert, type Change, type GameState } from './game';
 
@@ -36,7 +44,7 @@ export function saveGame(game: GameState, elapsedMs: number, now: Date): SavedGa
   });
   return {
     cells: encodeCells(puzzle.cells),
-    board: encodeBoard(game.partner, puzzle.cols),
+    board: encodePartners(game.partner, puzzle.cols),
     walls,
     past: game.past,
     elapsedMs: Math.max(0, Math.round(elapsedMs)),
@@ -125,44 +133,12 @@ export function sanitizeSavedGames(value: unknown): SavedGames {
   return games;
 }
 
-/** Dominoes on the board of a saved game. */
-export function savedPlacedCount(saved: SavedGame): number {
-  let covered = 0;
-  for (const ch of saved.board) if (ch !== '.') covered++;
-  return covered / 2;
-}
-
 // --- Encoding ------------------------------------------------------------------
-
-export function encodeBoard(partner: readonly CellIndex[], cols: number): string {
-  return partner
-    .map((p, cell) => {
-      if (p < 0) return '.';
-      switch (p - cell) {
-        case 1:
-          return 'R';
-        case -1:
-          return 'L';
-        case cols:
-          return 'D';
-        case -cols:
-          return 'U';
-        default:
-          throw new RangeError(`Cells ${cell} and ${p} are not adjacent`);
-      }
-    })
-    .join('');
-}
 
 /** Partner array for an encoded board, or null when it is malformed or inconsistent. */
 export function decodeBoard(text: string, cols: number, size: number): CellIndex[] | null {
   if (text.length !== size) return null;
-  const offsets: Record<string, number> = { R: 1, L: -1, D: cols, U: -cols };
-  const partner = Array.from(text, (ch, cell) => {
-    if (ch === '.') return -1;
-    const offset = offsets[ch];
-    return offset === undefined ? Number.NaN : cell + offset;
-  });
+  const partner = decodePartners(text, cols);
   return isConsistent(partner, cols) ? partner : null;
 }
 

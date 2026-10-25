@@ -6,7 +6,7 @@ import { createGame, gameReducer, type GameAction, type GameState } from '@/game
 // The real strings module is pure, but `@/i18n` pulls in Expo; load the table directly.
 vi.mock('@/i18n', async () => ({ ...(await import('@/i18n/strings')) }));
 const { STRINGS } = await import('@/i18n/strings');
-const { announcementFor, cellActions, describeCells, neighbourOf } = await import('../a11y');
+const { announcementFor, cellActions, describeCells } = await import('../a11y');
 
 const t = STRINGS.es;
 
@@ -18,17 +18,6 @@ const t = STRINGS.es;
  */
 const puzzle = createPuzzle(1, 3, 2, [0, 1, 0, 1, 1, 0]);
 const play = (...actions: GameAction[]): GameState => actions.reduce(gameReducer, createGame(puzzle));
-
-describe('neighbourOf', () => {
-  it('stops at the edges', () => {
-    expect(neighbourOf(0, 'up', 3, 2)).toBe(-1);
-    expect(neighbourOf(0, 'left', 3, 2)).toBe(-1);
-    expect(neighbourOf(0, 'right', 3, 2)).toBe(1);
-    expect(neighbourOf(0, 'down', 3, 2)).toBe(2);
-    expect(neighbourOf(5, 'down', 3, 2)).toBe(-1);
-    expect(neighbourOf(1, 'right', 3, 2)).toBe(-1);
-  });
-});
 
 describe('describeCells', () => {
   it('says position and number of an empty cell', () => {

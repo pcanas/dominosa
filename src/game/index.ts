@@ -18,12 +18,10 @@ export {
 export { recordSolve, type LevelProgress, type ProgressMap } from './progress';
 export {
   decodeBoard,
-  encodeBoard,
   MAX_SAVED_GAMES,
   restoreGame,
   sanitizeSavedGames,
   saveGame,
-  savedPlacedCount,
   withoutSavedGame,
   withSavedGame,
   type SavedGame,

@@ -1,17 +1,19 @@
-import { router } from 'expo-router';
 import Head from 'expo-router/head';
-import { Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { useStrings } from '@/i18n';
+import { hapticsAvailable } from '@/platform/haptics';
 import { useHydrated } from '@/platform/use-hydrated';
-import { useSettingsStore, type LanguageSetting, type ThemeSetting } from '@/state/settings-store';
+import {
+  DEFAULT_SETTINGS,
+  useSettingsStore,
+  type LanguageSetting,
+  type ThemeSetting,
+} from '@/state/settings-store';
 import { AppText } from '@/ui/components/AppText';
-import { IconButton } from '@/ui/components/IconButton';
 import { Screen } from '@/ui/components/Screen';
+import { TopBar } from '@/ui/components/TopBar';
 import { radius, spacing, useTheme } from '@/ui/theme';
-
-/** Vibration only exists in the native app: Safari and other browsers cannot vibrate. */
-const HAS_VIBRATION = Platform.OS === 'ios' || Platform.OS === 'android';
 
 /** Language names in their own language, as players look for them. */
 const LANGUAGE_NAMES = { es: 'Español', en: 'English', fr: 'Français' } as const;
@@ -21,30 +23,22 @@ export default function SettingsScreen() {
   const hydrated = useHydrated();
   const settings = useSettingsStore();
   // Stored values only after hydration, so the static web render matches.
-  const { vibration, showTimer, theme, language } = hydrated
-    ? settings
-    : { vibration: true, showTimer: false, theme: 'system' as const, language: 'system' as const };
+  const { vibration, showTimer, theme, language } = hydrated ? settings : DEFAULT_SETTINGS;
 
   return (
     <Screen>
       <Head>
         <title>{`${t.settings.title} · ${t.appName}`}</title>
       </Head>
-      <View style={styles.topBar}>
-        <IconButton
-          icon="chevron-back"
-          label={t.actions.back}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        />
-        <AppText variant="heading" accessibilityRole="header" style={styles.title}>
+      <TopBar backTo="/">
+        <AppText variant="heading" accessibilityRole="header">
           {t.settings.title}
         </AppText>
-        <View style={styles.topBarSpacer} />
-      </View>
+      </TopBar>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Section title={t.settings.game}>
-          {HAS_VIBRATION && (
+          {hapticsAvailable && (
             <SwitchRow
               label={t.settings.vibration}
               value={vibration}
@@ -173,9 +167,6 @@ function Choice<T extends string>({
 }
 
 const styles = StyleSheet.create({
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.sm },
-  title: { flex: 1, textAlign: 'center' },
-  topBarSpacer: { minWidth: 64 },
   content: { paddingVertical: spacing.xl, gap: spacing.xl },
   section: { gap: spacing.sm },
   sectionTitle: { paddingHorizontal: spacing.xs },
