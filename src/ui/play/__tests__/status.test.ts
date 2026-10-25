@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { formatDuration } from '@/i18n/format';
 import { STRINGS } from '@/i18n/strings';
 
-import { describeStatus, pairStatus, type StatusInput } from '../status';
+import { describeSolve, describeStatus, pairStatus, type StatusInput } from '../status';
 
 const t = STRINGS.es;
 const base: StatusInput = {
@@ -52,6 +52,32 @@ describe('pairStatus', () => {
     expect(pairStatus({ label: '2–3', slots: { placed: [], open: [slot, slot] } }, t).text).toBe(
       t.status.pairOpen('2–3', 2),
     );
+  });
+});
+
+describe('describeSolve', () => {
+  it('shows the time, and only the time on a first solve', () => {
+    expect(describeSolve(83_000, null, t)).toEqual({
+      title: '¡Resuelto en 1:23!',
+      detail: null,
+      newBest: false,
+    });
+  });
+
+  it('celebrates a new best time', () => {
+    expect(describeSolve(61_000, 83_000, t)).toEqual({
+      title: '¡Resuelto en 1:01!',
+      detail: 'Nuevo récord',
+      newBest: true,
+    });
+  });
+
+  it('otherwise reminds of the best time', () => {
+    expect(describeSolve(95_000, 83_000, t)).toEqual({
+      title: '¡Resuelto en 1:35!',
+      detail: 'Tu mejor tiempo: 1:23',
+      newBest: false,
+    });
   });
 });
 

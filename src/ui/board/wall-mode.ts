@@ -27,3 +27,12 @@ export function tapWallButton(button: WallButton, now: number): WallButton {
 export function afterWallDrawn(button: WallButton): WallButton {
   return button.mode === 'once' ? { ...button, mode: 'off' } : button;
 }
+
+/**
+ * The "Lock" / "Unlock" screen reader action: what a double tap does on
+ * screen. VoiceOver and TalkBack users cannot double-tap the button that way,
+ * since each activation already is a double tap.
+ */
+export function toggleWallLock(button: WallButton, now: number): WallButton {
+  return { mode: button.mode === 'locked' ? 'off' : 'locked', lastTapAt: now };
+}

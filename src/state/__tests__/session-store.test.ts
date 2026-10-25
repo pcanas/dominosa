@@ -34,7 +34,14 @@ function solveAll() {
 
 /** Forgets the in-memory session, as when the app is closed and opened again. */
 function restartApp() {
-  useSessionStore.setState({ levelId: null, game: null, elapsedMs: 0, runningSince: null, solvedInMs: null });
+  useSessionStore.setState({
+    levelId: null,
+    game: null,
+    elapsedMs: 0,
+    runningSince: null,
+    solvedInMs: null,
+    bestBeforeMs: null,
+  });
 }
 
 const session = () => useSessionStore.getState();
@@ -58,6 +65,27 @@ describe('session store', () => {
     expect(outcomes.slice(0, -1).every((o) => o === 'placed')).toBe(true);
     expect(session().solvedInMs).toBe(42_000);
     expect(useProgressStore.getState().levels[level.id]).toMatchObject({ bestMs: 42_000, timesSolved: 1 });
+  });
+
+  it('remembers the best time from before each solve', () => {
+    session().open(level);
+    vi.advanceTimersByTime(42_000);
+    solveAll();
+    expect(session().bestBeforeMs).toBeNull();
+
+    // Replay: slower this time, so the earlier time is still the best.
+    session().dispatch({ type: 'reset' });
+    expect(session().bestBeforeMs).toBeNull();
+    vi.advanceTimersByTime(50_000);
+    solveAll();
+    expect(session()).toMatchObject({ solvedInMs: 50_000, bestBeforeMs: 42_000 });
+
+    // A faster replay beats it.
+    session().dispatch({ type: 'reset' });
+    vi.advanceTimersByTime(30_000);
+    solveAll();
+    expect(session()).toMatchObject({ solvedInMs: 30_000, bestBeforeMs: 42_000 });
+    expect(useProgressStore.getState().levels[level.id]?.bestMs).toBe(30_000);
   });
 
   it('does not count paused time', () => {

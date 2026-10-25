@@ -10,7 +10,9 @@ This is an Expo/React Native mobile application (Dominosa puzzle game). Prioriti
 - The React Compiler is on (`experiments.reactCompiler`): render must be pure. Never read `Date.now()`, `Math.random()` or other changing values while rendering — the compiler memoizes the call and the value freezes. Keep them in state updated from an effect or event (see `src/ui/play/Clock.tsx`).
 - Accessibility: every control has a role and a label; toggles also spread `toggleState()` (from `IconButton`) because react-native-web does not map `accessibilityState.selected` to ARIA. What a board cell says, its VoiceOver actions and the announcement after each move come from `src/ui/board/a11y.ts`; new strings go in `strings.ts` under `a11y` / `announce`. On the board, the elements screen readers use are a transparent layer of cells drawn last, above numbers, dominoes and walls (all `aria-hidden`). Keep it that way: VoiceOver's touch exploration and its activation tap land on the top view, so anything drawn over the cells gets in the way.
 - Screen reader play mode (pick a cell, then a neighbour) follows the system and only exists in the native app: browsers cannot tell whether a screen reader is on. For browser tests, build with `EXPO_PUBLIC_TEST_HOOKS=1` and call `window.__dominosaTest.setScreenReader(true)`; without the variable the hook is not in the bundle.
-- Expo SDK 58 (React Native 0.88). The App Store Expo Go only opens the latest SDK, so keep the project on it to test in Expo Go. Gesture Handler 3 deprecates the `Gesture.*` builder API that `src/ui/board/useBoardGesture.ts` uses (hooks such as `usePanGesture` replace it); it still works, migrate when that file is next reworked.
+- Expo SDK 58 (React Native 0.88). The App Store Expo Go only opens the latest SDK, so keep the project on it to test in Expo Go. Gestures use Gesture Handler 3's hook API (`usePanGesture`, `useTapGesture`, `useCompetingGestures`; see `src/ui/board/useBoardGesture.ts`), not the deprecated `Gesture.*` builders.
+- Colours: every colour that carries meaning has a contrast test (`src/ui/theme/__tests__/palette.test.ts`, `src/ui/board/__tests__/tile-style.test.ts`): text 4.5:1, outlines and walls 3:1 against the board and the cells. Tile colours come from `tileColors` in `src/ui/board/tile-style.ts`. With Reanimated, use `sharedValue.get()` / `.set()` (React Compiler) and keep the default `ReduceMotion.System`; exit animations that must also run on the web are `Keyframe`s.
+- Sound effects go through `src/platform/sound.ts` (expo-audio; `sound.web.ts` uses Web Audio), like haptics. The WAV files in `assets/sounds/` and every icon, splash and PWA image are generated: change `scripts/sounds.ts` or `scripts/icon-art.ts` and run `npm run sounds` / `npm run icons`, never edit the outputs by hand. `expo-audio` is in Expo Go; its config plugin is set to add no microphone or background-audio permission.
 - Web safe areas: since SDK 58 Expo Router reports zero insets on the web, so `Screen` pads with CSS `env(safe-area-inset-*)` there. Do not add another `SafeAreaProvider` (Expo Router provides one; a second one can break hydration). `src/app/+html.tsx` must render `headNodes` and `bodyNodes` from `useServerDocumentContext()`, or the page stops hydrating.
 - Code and comments in English; README in Spanish.
 - Run `npm run check` (typecheck, lint, format, tests) before declaring any task done.
@@ -27,11 +29,13 @@ Expo ships breaking changes every SDK release. APIs you remember are likely rena
 ## Commands
 
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm add for Expo/RN packages — resolves SDK-compatible versions
+npx expo install <package>  # ALWAYS use instead of npm add for Expo/RN packages — resolves SDK-compatible versions (EXPO_OFFLINE=1 if api.expo.dev is unreachable)
 npm run web                 # dev server in the browser
 npm start                   # dev server + QR for Expo Go
 npm run check               # typecheck + lint + format + tests
 npm run levels              # regenerate level packs
+npm run sounds              # regenerate assets/sounds/*.wav
+npm run icons               # regenerate icons, splash, favicon and PWA images
 npm run build:web           # static export + PWA (set BASE_URL for GitHub Pages)
 npx expo-doctor             # diagnose dependency and config issues
 ```

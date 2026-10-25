@@ -29,6 +29,8 @@ interface SessionStore {
   readonly runningSince: number | null;
   /** Time taken, set once the board is solved. */
   readonly solvedInMs: number | null;
+  /** Best time for this level before the solve that just happened (null on a first solve). */
+  readonly bestBeforeMs: number | null;
   /**
    * Opens a level: resumes it if it is the unsolved level already open,
    * otherwise restores its saved game or starts a new one. Starts the clock.
@@ -44,7 +46,14 @@ interface SessionStore {
   dispatch(action: GameAction): DispatchOutcome;
 }
 
-const EMPTY = { levelId: null, game: null, elapsedMs: 0, runningSince: null, solvedInMs: null } as const;
+const EMPTY = {
+  levelId: null,
+  game: null,
+  elapsedMs: 0,
+  runningSince: null,
+  solvedInMs: null,
+  bestBeforeMs: null,
+} as const;
 
 /** Time played in the current attempt. */
 export function elapsedNow(
@@ -85,6 +94,7 @@ export const useSessionStore = create<SessionStore>()((set, get) => {
         elapsedMs: restored?.elapsedMs ?? 0,
         runningSince: Date.now(),
         solvedInMs: null,
+        bestBeforeMs: null,
       });
     },
 
@@ -118,15 +128,17 @@ export const useSessionStore = create<SessionStore>()((set, get) => {
       // Only a placement can complete the board (undo never restores a solved one).
       if (action.type === 'place' && isSolved(next)) {
         const solvedInMs = elapsedNow(get());
-        set({ game: next, solvedInMs, elapsedMs: solvedInMs, runningSince: null });
-        useProgressStore.getState().recordSolve(levelId, solvedInMs);
+        const progress = useProgressStore.getState();
+        const bestBeforeMs = progress.levels[levelId]?.bestMs ?? null;
+        set({ game: next, solvedInMs, bestBeforeMs, elapsedMs: solvedInMs, runningSince: null });
+        progress.recordSolve(levelId, solvedInMs);
         useSavedGamesStore.getState().discard(levelId);
         return 'solved';
       }
 
       if (action.type === 'reset' && isSolved(game)) {
         // Replaying a solved board starts a new, timed attempt.
-        set({ game: next, elapsedMs: 0, runningSince: Date.now(), solvedInMs: null });
+        set({ game: next, elapsedMs: 0, runningSince: Date.now(), solvedInMs: null, bestBeforeMs: null });
       } else {
         // Playing while paused (e.g. a missed "app active" event) restarts the clock.
         set(get().runningSince === null ? { game: next, runningSince: Date.now() } : { game: next });

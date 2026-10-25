@@ -1,6 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  type AccessibilityActionEvent,
+  type AccessibilityActionInfo,
+} from 'react-native';
 
 import { radius, spacing, useTheme } from '@/ui/theme';
 
@@ -22,6 +29,9 @@ interface IconButtonProps {
   readonly badge?: IconName;
   /** Spoken label when it differs from the visible one. */
   readonly accessibilityLabel?: string;
+  /** Extra VoiceOver / TalkBack actions (picked from the actions rotor or menu). */
+  readonly accessibilityActions?: readonly AccessibilityActionInfo[];
+  readonly onAccessibilityAction?: (event: AccessibilityActionEvent) => void;
 }
 
 /** Round icon button with an optional caption; at least 44 pt to hit comfortably. */
@@ -35,6 +45,8 @@ export function IconButton({
   selected,
   badge,
   accessibilityLabel,
+  accessibilityActions,
+  onAccessibilityAction,
 }: IconButtonProps) {
   const { palette } = useTheme();
   const filled = tone === 'primary' || selected === true;
@@ -47,6 +59,8 @@ export function IconButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={selected === undefined ? { disabled } : { disabled, selected }}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
       {...toggleState(selected)}
       hitSlop={6}
       style={({ pressed }) => [styles.root, disabled && styles.disabled, pressed && styles.pressed]}>

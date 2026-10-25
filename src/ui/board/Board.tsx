@@ -9,12 +9,14 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { DIRECTIONS, makePair, neighbourOf, type CellIndex, type Pair, type Puzzle } from '@/core';
 import type { GameAction, PairSlots, PlacedTile } from '@/game';
 import { fonts, radius, useTheme } from '@/ui/theme';
 
 import type { CellAction } from './a11y';
+import { waveDelay } from './celebration';
 import {
   cellRect,
   computeMetrics,
@@ -25,6 +27,7 @@ import {
   type BoardMetrics,
   type Rect,
 } from './geometry';
+import { PipFace } from './PipFace';
 import { Tile } from './Tile';
 import { useBoardGesture, type BoardTool, type DragState } from './useBoardGesture';
 
@@ -42,6 +45,10 @@ interface BoardProps {
   readonly highlight?: PairSlots | null;
   /** What each cell says to screen readers (see `describeCells`). */
   readonly descriptions: readonly string[];
+  /** Draw values as domino pips instead of digits (only for boards up to 6, see `canShowPips`). */
+  readonly pips?: boolean;
+  /** Cell of the domino that solved the board: the solve wave spreads out from it. */
+  readonly celebrateFrom?: CellIndex | null;
   /**
    * Set while a screen reader is on: swipes are off and cells become buttons
    * that are picked one by one (see `pickCell`), with VoiceOver actions.
@@ -69,6 +76,8 @@ export function Board({
   onAction,
   highlight = null,
   descriptions,
+  pips = false,
+  celebrateFrom = null,
   screenReader = null,
 }: BoardProps) {
   const { palette } = useTheme();
@@ -142,9 +151,9 @@ export function Board({
           {!solved &&
             highlight?.open.map((slot) => (
               <Tile
-                key={`hint-${slot.a}-${slot.b}`}
+                key={`slot-${slot.a}-${slot.b}`}
                 rect={pairRect(metrics, slot.a, slot.b)}
-                variant="hint"
+                variant="slot"
                 cell={metrics.cell}
               />
             ))}
@@ -163,6 +172,9 @@ export function Board({
                       : 'placed'
               }
               cell={metrics.cell}
+              celebrateDelay={
+                solved && celebrateFrom !== null ? waveDelay(tile, celebrateFrom, puzzle.cols) : 0
+              }
             />
           ))}
 
@@ -174,7 +186,7 @@ export function Board({
                 pair={wall}
                 // A finger resting on a wall shows it will be removed when lifted.
                 pressed={pairKey(wall) === pressedWall}
-                opacity={1}
+                animate
               />
             ))}
 
@@ -208,24 +220,33 @@ export function Board({
                 />
               ))}
 
-          {/* Numbers are part of each cell's description, so the layer is hidden from screen readers. */}
+          {/* Values are part of each cell's description, so the layer is hidden from screen readers. */}
           <View pointerEvents="none" aria-hidden style={StyleSheet.absoluteFill}>
-            {puzzle.cells.map((pip, i) => (
-              <Text
-                key={`pip-${i}`}
-                allowFontScaling={false}
-                style={[
-                  styles.pip,
-                  cellBoxes[i],
-                  {
-                    lineHeight: cellBoxes[i]!.height,
-                    fontSize: Math.round(metrics.cell * 0.5),
-                    color: palette.text,
-                  },
-                ]}>
-                {pip}
-              </Text>
-            ))}
+            {puzzle.cells.map((value, i) =>
+              pips ? (
+                <PipFace
+                  key={`pip-${i}`}
+                  value={value}
+                  style={{ position: 'absolute', ...cellBoxes[i]! }}
+                  color={palette.text}
+                />
+              ) : (
+                <Text
+                  key={`pip-${i}`}
+                  allowFontScaling={false}
+                  style={[
+                    styles.pip,
+                    cellBoxes[i],
+                    {
+                      lineHeight: cellBoxes[i]!.height,
+                      fontSize: Math.round(metrics.cell * 0.5),
+                      color: palette.text,
+                    },
+                  ]}>
+                  {value}
+                </Text>
+              ),
+            )}
           </View>
 
           <CellTargets
@@ -295,28 +316,40 @@ function CellTargets({
   });
 }
 
+/** Walls fade in and out; previews follow the finger without animating. */
+const WALL_IN = FadeIn.duration(140);
+const WALL_OUT = FadeOut.duration(140);
+
 function WallBar({
   metrics,
   pair,
-  opacity,
+  opacity = 1,
   pressed = false,
+  animate = false,
 }: {
   readonly metrics: BoardMetrics;
   readonly pair: Pair;
-  readonly opacity: number;
+  /** Previews are see-through. */
+  readonly opacity?: number;
   /** Terracotta while a resting finger would remove it. */
   readonly pressed?: boolean;
+  /** A wall on the board (not a preview): fades in when drawn and out when removed. */
+  readonly animate?: boolean;
 }) {
   const { palette } = useTheme();
   const thickness = wallThickness(metrics);
   return (
-    <View
+    <Animated.View
       pointerEvents="none"
       aria-hidden
+      entering={animate ? WALL_IN : undefined}
+      exiting={animate ? WALL_OUT : undefined}
       style={[
         styles.wall,
         box(wallRect(metrics, pair.a, pair.b, thickness)),
-        { borderRadius: thickness / 2, backgroundColor: pressed ? palette.accent : palette.wall, opacity },
+        { borderRadius: thickness / 2, backgroundColor: pressed ? palette.accent : palette.wall },
+        // The fade owns the opacity of a wall on the board; previews set their own.
+        !animate && { opacity },
       ]}
     />
   );

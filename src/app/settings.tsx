@@ -1,5 +1,5 @@
 import Head from 'expo-router/head';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { useStrings } from '@/i18n';
 import { hapticsAvailable } from '@/platform/haptics';
@@ -8,6 +8,7 @@ import {
   DEFAULT_SETTINGS,
   useSettingsStore,
   type LanguageSetting,
+  type NumberStyle,
   type ThemeSetting,
 } from '@/state/settings-store';
 import { AppText } from '@/ui/components/AppText';
@@ -23,7 +24,9 @@ export default function SettingsScreen() {
   const hydrated = useHydrated();
   const settings = useSettingsStore();
   // Stored values only after hydration, so the static web render matches.
-  const { vibration, showTimer, theme, language } = hydrated ? settings : DEFAULT_SETTINGS;
+  const { sound, vibration, showTimer, theme, language, numberStyle } = hydrated
+    ? settings
+    : DEFAULT_SETTINGS;
 
   return (
     <Screen>
@@ -38,6 +41,11 @@ export default function SettingsScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Section title={t.settings.game}>
+          <SwitchRow
+            label={t.settings.sound}
+            value={sound}
+            onChange={(value) => settings.update({ sound: value })}
+          />
           {hapticsAvailable && (
             <SwitchRow
               label={t.settings.vibration}
@@ -50,6 +58,21 @@ export default function SettingsScreen() {
             value={showTimer}
             onChange={(value) => settings.update({ showTimer: value })}
           />
+        </Section>
+
+        <Section title={t.settings.board}>
+          <Choice<NumberStyle>
+            label={t.settings.numberStyle}
+            value={numberStyle}
+            options={[
+              { value: 'digits', label: t.settings.numberStyles.digits },
+              { value: 'pips', label: t.settings.numberStyles.pips },
+            ]}
+            onChange={(value) => settings.update({ numberStyle: value })}
+          />
+          <AppText variant="caption" tone="secondary">
+            {t.settings.pipsNote}
+          </AppText>
         </Section>
 
         <Section title={t.settings.theme}>
@@ -116,6 +139,8 @@ function SwitchRow({
         accessibilityLabel={label}
         trackColor={{ false: palette.board, true: palette.success }}
         thumbColor={palette.tile}
+        // react-native-web paints a switch that is on with its own teal thumb unless told otherwise.
+        {...(Platform.OS === 'web' ? ({ activeThumbColor: palette.tile } as object) : {})}
       />
     </View>
   );

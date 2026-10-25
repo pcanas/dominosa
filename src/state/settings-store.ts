@@ -5,36 +5,48 @@ import { appStorage } from '@/platform/storage';
 
 export type ThemeSetting = 'system' | 'light' | 'dark';
 export type LanguageSetting = 'system' | 'es' | 'en' | 'fr';
+/** How the board shows each cell's value: digits, or domino pips (only up to 6, see `MAX_PIPS`). */
+export type NumberStyle = 'digits' | 'pips';
 
 export interface Settings {
+  /** Sound effects on placements, walls and solves. On iOS they follow the silent switch. */
+  readonly sound: boolean;
   /** Haptic feedback on placements, walls and solves (native app only). */
   readonly vibration: boolean;
   /** Show the running time while playing. Off by default: the game is relaxed, time is still recorded. */
   readonly showTimer: boolean;
   readonly theme: ThemeSetting;
   readonly language: LanguageSetting;
+  readonly numberStyle: NumberStyle;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  sound: true,
   vibration: true,
   showTimer: false,
   theme: 'system',
   language: 'system',
+  numberStyle: 'digits',
 };
 
 const THEMES: readonly ThemeSetting[] = ['system', 'light', 'dark'];
 const LANGUAGES: readonly LanguageSetting[] = ['system', 'es', 'en', 'fr'];
+const NUMBER_STYLES: readonly NumberStyle[] = ['digits', 'pips'];
 
 /** Stored settings with every unknown or malformed value replaced by its default. */
 export function sanitizeSettings(value: unknown): Settings {
   const v = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
   return {
+    sound: typeof v.sound === 'boolean' ? v.sound : DEFAULT_SETTINGS.sound,
     vibration: typeof v.vibration === 'boolean' ? v.vibration : DEFAULT_SETTINGS.vibration,
     showTimer: typeof v.showTimer === 'boolean' ? v.showTimer : DEFAULT_SETTINGS.showTimer,
     theme: THEMES.includes(v.theme as ThemeSetting) ? (v.theme as ThemeSetting) : DEFAULT_SETTINGS.theme,
     language: LANGUAGES.includes(v.language as LanguageSetting)
       ? (v.language as LanguageSetting)
       : DEFAULT_SETTINGS.language,
+    numberStyle: NUMBER_STYLES.includes(v.numberStyle as NumberStyle)
+      ? (v.numberStyle as NumberStyle)
+      : DEFAULT_SETTINGS.numberStyle,
   };
 }
 
@@ -66,6 +78,6 @@ export const useSettingsStore = create<SettingsStore>()(
 );
 
 function pickSettings(state: Settings): Settings {
-  const { vibration, showTimer, theme, language } = state;
-  return { vibration, showTimer, theme, language };
+  const { sound, vibration, showTimer, theme, language, numberStyle } = state;
+  return { sound, vibration, showTimer, theme, language, numberStyle };
 }

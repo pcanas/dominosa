@@ -17,24 +17,34 @@ import {
   wallPairs,
   type GameAction,
 } from '@/game';
-import { formatDuration, useStrings } from '@/i18n';
+import { useStrings } from '@/i18n';
 import { getLevel, LEVELS, nextLevel, type Level } from '@/levels';
 import { haptics } from '@/platform/haptics';
 import { announce, useScreenReader } from '@/platform/screen-reader';
+import { sound } from '@/platform/sound';
 import { useSavedGamesStore } from '@/state/saved-games-store';
 import { useSessionStore, type DispatchOutcome } from '@/state/session-store';
 import { useSettingsStore } from '@/state/settings-store';
 import { announcementFor, cellActions, describeCells } from '@/ui/board/a11y';
 import { Board } from '@/ui/board/Board';
+import { WAVE_TURN_MS, waveEnd } from '@/ui/board/celebration';
+import { canShowPips } from '@/ui/board/pips';
 import { pickCell } from '@/ui/board/tap-select';
-import { afterWallDrawn, tapWallButton, WALL_BUTTON_OFF, type WallButton } from '@/ui/board/wall-mode';
+import {
+  afterWallDrawn,
+  tapWallButton,
+  toggleWallLock,
+  WALL_BUTTON_OFF,
+  type WallButton,
+} from '@/ui/board/wall-mode';
 import { AppText } from '@/ui/components/AppText';
 import { IconButton } from '@/ui/components/IconButton';
 import { NotFound } from '@/ui/components/NotFound';
 import { Screen } from '@/ui/components/Screen';
 import { TopBar } from '@/ui/components/TopBar';
 import { Clock } from '@/ui/play/Clock';
-import { pairLabel, pairStatus } from '@/ui/play/status';
+import { SolvedCard } from '@/ui/play/SolvedCard';
+import { describeSolve, pairLabel, pairStatus } from '@/ui/play/status';
 import { StatusLine } from '@/ui/play/StatusLine';
 import { spacing } from '@/ui/theme';
 import { PairTracker } from '@/ui/tracker/PairTracker';
@@ -63,6 +73,15 @@ const HAPTICS: Partial<Record<DispatchOutcome, () => void>> = {
   solved: haptics.solved,
 };
 
+/** Sound for each kind of move (a placement refused by a wall only vibrates). */
+const SOUNDS: Partial<Record<DispatchOutcome, () => void>> = {
+  placed: sound.place,
+  removed: sound.remove,
+  wallAdded: sound.wall,
+  wallRemoved: sound.remove,
+  solved: sound.solved,
+};
+
 function PlayScreen({ level }: { readonly level: Level }) {
   const t = useStrings();
   const open = useSessionStore((s) => s.open);
@@ -80,6 +99,10 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const [selectedPair, setSelectedPair] = useState<DominoId | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const vibration = useSettingsStore((s) => s.vibration);
+  const soundOn = useSettingsStore((s) => s.sound);
+  const numberStyle = useSettingsStore((s) => s.numberStyle);
+  /** Cell of the domino that solved the board, where the solve wave starts. */
+  const [celebrateFrom, setCelebrateFrom] = useState<CellIndex | null>(null);
   const screenReaderOn = useScreenReader();
   /** Cell picked first while playing with a screen reader. */
   const [pickedCell, setPickedCell] = useState<CellIndex | null>(null);
@@ -92,6 +115,11 @@ function PlayScreen({ level }: { readonly level: Level }) {
     open(level);
     return () => leave(level.id);
   }, [level, savedGamesReady, open, leave]);
+
+  // Load the sounds before the first move needs them.
+  useEffect(() => {
+    if (soundOn) sound.prepare();
+  }, [soundOn]);
 
   // The clock only runs while this screen is in front (not under settings) and the app is active;
   // pausing also saves the game.
@@ -129,6 +157,8 @@ function PlayScreen({ level }: { readonly level: Level }) {
       : null;
   const packName = t.packs[level.packId] ?? level.packId;
   const descriptions = describeCells(game, selectedCell, t);
+  const pips = numberStyle === 'pips' && canShowPips(order);
+  const tiles = placedTiles(game);
 
   const say = (message: string) => {
     // Alternate a zero-width space so the same message twice is still read twice.
@@ -139,9 +169,11 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const act = (action: GameAction) => {
     const outcome = dispatch(action);
     if (vibration) HAPTICS[outcome]?.();
+    if (soundOn) SOUNDS[outcome]?.();
     const after = useSessionStore.getState();
     if (after.game) {
-      const solvedText = t.status.solved(formatDuration(after.solvedInMs ?? 0));
+      const summary = describeSolve(after.solvedInMs ?? 0, after.bestBeforeMs, t);
+      const solvedText = summary.detail ? `${summary.title} ${summary.detail}` : summary.title;
       const message = announcementFor(action, outcome, after.game, t, solvedText);
       if (message) say(message);
     }
@@ -151,6 +183,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
       setWallButton(WALL_BUTTON_OFF);
       setTrackerOpen(false);
       setSelectedPair(null);
+      if (action.type === 'place') setCelebrateFrom(action.a);
     }
     // Placing the pair picked in the tracker is what the highlight was for.
     if (outcome === 'placed' && action.type === 'place' && selectedPair !== null) {
@@ -181,6 +214,13 @@ function PlayScreen({ level }: { readonly level: Level }) {
     setSelectedPair(domino);
     setTrackerOpen(false);
     say(pairStatus({ label: pairLabel(domino, order), slots: pairSlots(game, domino) }, t).text);
+  };
+
+  /** VoiceOver / TalkBack action on the wall button: lock it, or let it go. */
+  const onWallAction = () => {
+    const next = toggleWallLock(wallButton, Date.now());
+    setWallButton(next);
+    say(next.mode === 'locked' ? t.announce.wallLocked : t.announce.wallOff);
   };
 
   const onReset = () => {
@@ -222,24 +262,36 @@ function PlayScreen({ level }: { readonly level: Level }) {
         </View>
       </TopBar>
 
-      <StatusLine
-        status={boardStatus(game)}
-        wallMode={wallButton.mode}
-        pickMode={screenReaderOn}
-        pair={pair}
-        onClearPair={() => setSelectedPair(null)}
-        solvedInMs={session?.solvedInMs ?? null}
-      />
+      {solved && session?.solvedInMs != null ? (
+        <SolvedCard
+          summary={describeSolve(session.solvedInMs, session.bestBeforeMs, t)}
+          // Shows up as the solve wave settles.
+          delay={
+            celebrateFrom === null ? 0 : waveEnd(tiles, celebrateFrom, level.puzzle.cols) - WAVE_TURN_MS / 2
+          }
+        />
+      ) : (
+        <StatusLine
+          status={boardStatus(game)}
+          wallMode={wallButton.mode}
+          pickMode={screenReaderOn}
+          pair={pair}
+          onClearPair={() => setSelectedPair(null)}
+          solvedInMs={session?.solvedInMs ?? null}
+        />
+      )}
 
       <Board
         puzzle={level.puzzle}
-        tiles={placedTiles(game)}
+        tiles={tiles}
         walls={wallPairs(game)}
         solved={solved}
         tool={wallButton.mode === 'off' ? 'domino' : 'wall'}
         onAction={act}
         highlight={pair?.slots ?? null}
         descriptions={descriptions}
+        pips={pips}
+        celebrateFrom={celebrateFrom}
         screenReader={
           screenReaderOn
             ? {
@@ -283,6 +335,12 @@ function PlayScreen({ level }: { readonly level: Level }) {
                     : t.actions.wall
               }
               onPress={() => setWallButton((current) => tapWallButton(current, Date.now()))}
+              accessibilityActions={[
+                { name: 'lock', label: wallButton.mode === 'locked' ? t.a11y.wallUnlock : t.a11y.wallLock },
+              ]}
+              onAccessibilityAction={(e) => {
+                if (e.nativeEvent.actionName === 'lock') onWallAction();
+              }}
               selected={wallButton.mode !== 'off'}
               badge={wallButton.mode === 'locked' ? 'lock-closed' : undefined}
               showLabel
@@ -319,6 +377,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
           selected={selectedPair}
           onSelect={onSelectPair}
           onClose={() => setTrackerOpen(false)}
+          pips={pips}
         />
       )}
     </Screen>

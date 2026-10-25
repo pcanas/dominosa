@@ -83,3 +83,19 @@ export function describeStatus(
       };
   }
 }
+
+/** What the card shown after a solve says. */
+export interface SolveSummary {
+  /** "Solved in 1:23!" */
+  readonly title: string;
+  /** How it compares with the best time so far; null on a first solve. */
+  readonly detail: string | null;
+  readonly newBest: boolean;
+}
+
+export function describeSolve(solvedInMs: number, bestBeforeMs: number | null, t: Strings): SolveSummary {
+  const title = t.status.solved(formatDuration(solvedInMs));
+  if (bestBeforeMs === null) return { title, detail: null, newBest: false };
+  if (solvedInMs < bestBeforeMs) return { title, detail: t.solved.newBest, newBest: true };
+  return { title, detail: t.solved.best(formatDuration(bestBeforeMs)), newBest: false };
+}

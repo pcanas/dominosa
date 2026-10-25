@@ -1,51 +1,97 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  interpolateColor,
+  Keyframe,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useTheme } from '@/ui/theme';
 
+import { WAVE_TURN_MS } from './celebration';
 import type { Rect } from './geometry';
+import { isPreview, tileColors, type TileVariant } from './tile-style';
 
-/**
- * `ghost`: preview while dragging; `blocked`: preview over a wall, where the
- * domino cannot go; `hint`: a free slot for the pair picked in the tracker;
- * `highlighted`: a placed domino of that pair.
- */
-export type TileVariant = 'placed' | 'duplicate' | 'solved' | 'ghost' | 'blocked' | 'hint' | 'highlighted';
+export type { TileVariant } from './tile-style';
 
 interface TileProps {
   readonly rect: Rect;
   readonly variant: TileVariant;
   /** Cell size, used to scale corners and the duplicate badge. */
   readonly cell: number;
+  /** Once the board is solved: how long this domino waits before turning sage (see `waveDelay`). */
+  readonly celebrateDelay?: number;
 }
 
 const INSET = 1;
+/** Soft snap when a domino lands. */
+const SNAP = { damping: 13, stiffness: 260, mass: 0.6 } as const;
 
-/** A domino covering two cells. Numbers are drawn by the board on top of it. */
-export function Tile({ rect, variant, cell }: TileProps) {
+/**
+ * A domino taken off the board (removed, undone, replaced, reset) fades and
+ * shrinks a little instead of vanishing. A keyframe, so it also runs on the web.
+ */
+const LEAVE = new Keyframe({
+  0: { opacity: 1, transform: [{ scale: 1 }] },
+  100: { opacity: 0, transform: [{ scale: 0.9 }] },
+}).duration(170);
+
+/**
+ * A domino covering two cells. Numbers are drawn by the board on top of it.
+ *
+ * Every animation here uses Reanimated's default `ReduceMotion.System`: with
+ * "Reduce motion" on, they jump straight to their end state.
+ */
+export function Tile({ rect, variant, cell, celebrateDelay = 0 }: TileProps) {
   const { palette } = useTheme();
-  const preview = variant === 'ghost' || variant === 'blocked' || variant === 'hint';
-  const emphasis = variant === 'hint' || variant === 'highlighted';
+  const preview = isPreview(variant);
+  const emphasis = variant === 'slot' || variant === 'highlighted';
+  const solved = variant === 'solved';
   const scale = useSharedValue(preview ? 1 : 0.86);
+  // 0 → 1 while the domino turns sage. A domino drawn already solved starts turned.
+  const turned = useSharedValue(solved ? 1 : 0);
 
   useEffect(() => {
-    // Soft snap when the domino lands.
-    scale.value = withSpring(1, { damping: 13, stiffness: 260, mass: 0.6 });
+    scale.set(withSpring(1, SNAP));
   }, [scale]);
 
-  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  useEffect(() => {
+    if (!solved) {
+      turned.set(0);
+      return;
+    }
+    if (turned.get() === 1) return;
+    turned.set(withDelay(celebrateDelay, withTiming(1, { duration: WAVE_TURN_MS })));
+    scale.set(
+      withDelay(celebrateDelay, withSequence(withTiming(1.07, { duration: 120 }), withSpring(1, SNAP))),
+    );
+  }, [solved, celebrateDelay, turned, scale]);
+
+  // A solved domino is drawn as placed and turns sage in the animated style below.
+  const colors = tileColors(palette, solved ? 'placed' : variant);
+  const sage = tileColors(palette, 'solved');
+
+  const animated = useAnimatedStyle(() => {
+    if (!solved) return { transform: [{ scale: scale.get() }] };
+    const t = turned.get();
+    return {
+      transform: [{ scale: scale.get() }],
+      backgroundColor: interpolateColor(t, [0, 1], [colors.fill, sage.fill]),
+      borderColor: interpolateColor(t, [0, 1], [colors.border, sage.border]),
+    };
+  }, [solved, colors.fill, colors.border, sage.fill, sage.border]);
+
+  const dividerAnimated = useAnimatedStyle(() => {
+    if (!solved) return {};
+    return { backgroundColor: interpolateColor(turned.get(), [0, 1], [colors.divider, sage.divider]) };
+  }, [solved, colors.divider, sage.divider]);
 
   const horizontal = rect.width > rect.height;
-  const colors = {
-    placed: { fill: palette.tile, border: palette.tileBorder, divider: palette.tileBorder },
-    duplicate: { fill: palette.accentSoft, border: palette.accent, divider: palette.accent },
-    solved: { fill: palette.successSoft, border: palette.success, divider: palette.success },
-    ghost: { fill: 'transparent', border: palette.textSecondary, divider: 'transparent' },
-    blocked: { fill: 'transparent', border: palette.accent, divider: 'transparent' },
-    hint: { fill: palette.successSoft, border: palette.success, divider: 'transparent' },
-    highlighted: { fill: palette.tile, border: palette.success, divider: palette.tileBorder },
-  }[variant];
   const radius = Math.round(cell * 0.24);
   const badge = Math.max(14, Math.round(cell * 0.32));
 
@@ -53,6 +99,7 @@ export function Tile({ rect, variant, cell }: TileProps) {
     <Animated.View
       pointerEvents="none"
       aria-hidden
+      exiting={preview ? undefined : LEAVE}
       style={[
         styles.tile,
         {
@@ -69,10 +116,11 @@ export function Tile({ rect, variant, cell }: TileProps) {
         },
         animated,
       ]}>
-      <View
+      <Animated.View
         style={[
           horizontal ? styles.dividerVertical : styles.dividerHorizontal,
           { backgroundColor: colors.divider },
+          dividerAnimated,
         ]}
       />
       {variant === 'duplicate' && (

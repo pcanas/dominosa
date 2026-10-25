@@ -61,7 +61,8 @@ export function PackCard({ name, summary, onPress }: PackCardProps) {
             styles.fill,
             {
               width: `${(solved / total) * 100}%`,
-              backgroundColor: done ? palette.success : palette.tileBorder,
+              // Sage like the solved levels it counts; the soft border colour barely showed on the track.
+              backgroundColor: palette.success,
             },
           ]}
         />
