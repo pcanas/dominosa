@@ -2,13 +2,14 @@
 
 Puzle lógico de dominó: une cada pareja de números adyacentes con una ficha, usando cada ficha del juego exactamente una vez. Todo nivel tiene **solución única**.
 
-Prototipo jugable en el navegador, instalable en el iPhone como app web, con el motor en TypeScript que se reutilizará en la app nativa. El hito 0 está cerrado; el hito 1 va por bloques (hecho: **bloque 1, muros y guardado**).
+Prototipo jugable en el navegador, instalable en el iPhone como app web, con el motor en TypeScript que se reutilizará en la app nativa. El hito 0 está cerrado; el hito 1 va por bloques (hechos: **bloque 1**, muros y guardado, y **bloque 2**, rastreador de pares y packs).
 
-- 5 niveles en rampa de tamaño y profundidad de deducción: 4×5 (tutorial), 5×6, 7×8, 8×9 y 9×10 (experto).
+- **60 niveles en 5 packs de 12**, en rampa de tamaño y profundidad de deducción: Primeros pasos (4×5 y 5×6), Fácil (5×6 y 6×7), Medio (7×8), Difícil (8×9) y Experto (9×10). Todos abiertos. Inicio → pack (rejilla de niveles con resueltos y a medias) → partida; "Siguiente" sigue en el pack y salta al siguiente al terminarlo.
+- **Rastreador de pares** (botón "Pares"): panel con todas las fichas del juego en escalera; sin colocar, colocadas (salvia) o repetidas (terracota). Tocar un par cierra el panel y marca en el tablero sus huecos libres como fichas punteadas, con el recuento arriba; se quita con la ✕ o al colocar ese par. El panel flota sobre la parte baja de la pantalla, así que el tablero nunca encoge.
 - Deslizar de una celda a su vecina para colocar (ficha fantasma mientras arrastras; si vuelves atrás, se cancela), tocar para quitar, colocar encima de otra ficha la reemplaza.
 - **Muros** (marcar que dos celdas no pueden ir juntas): deslizar crea y tocar quita. El botón "Muro" funciona como la tecla de mayúsculas del iPhone: un toque vale para un muro (el modo se apaga al ponerlo), doble toque lo deja fijo (candado) hasta volver a tocarlo. Tocar un muro lo quita; su zona de toque es mucho mayor que la barra (hasta media celda si la celda está vacía, un cuarto si tiene ficha) y el muro se pone en terracota mientras el dedo está encima. Un muro impide colocar una ficha en ese hueco; poner un muro donde hay una ficha la quita.
 - Deshacer (hasta 500 pasos, muros incluidos), reiniciar con confirmación (borra fichas y muros), fichas repetidas en terracota con icono, verde salvia al resolver.
-- **Partidas guardadas:** cada nivel empezado se guarda en el dispositivo (fichas, muros, historial de deshacer y tiempo) y se retoma al volver, aunque se cierre la app. El reloj se para al salir del nivel o al pasar la app a segundo plano. En la lista, los niveles a medias muestran "En curso".
+- **Partidas guardadas:** cada nivel empezado se guarda en el dispositivo (fichas, muros, historial de deshacer y tiempo) y se retoma al volver, aunque se cierre la app. El reloj se para al salir del nivel o al pasar la app a segundo plano. En la rejilla del pack, los niveles a medias llevan un punto terracota.
 - Progreso y mejor tiempo guardados en el dispositivo. Modo oscuro cálido. ES / EN / FR según el idioma del sistema.
 - La pantalla de inicio muestra la versión y el commit del build, para saber si la app ya se actualizó (la PWA coge la versión nueva al cerrarla y volver a abrirla).
 - Funciona sin conexión una vez abierta (service worker).
@@ -73,7 +74,7 @@ src/
   platform/  Adaptadores: almacenamiento, vibración, service worker, hidratación web.
   i18n/      Textos ES/EN/FR tipados.
   ui/        Tema (paleta del plan), componentes, tablero y gestos.
-  app/       Rutas de Expo Router (inicio y /play/[levelId]).
+  app/       Rutas de Expo Router (inicio, /pack/[packId] y /play/[levelId]).
 scripts/     Pipeline de niveles (Node) y post-proceso PWA.
 ```
 
@@ -83,16 +84,19 @@ Reglas que el lint hace cumplir: `core/` no importa nada de fuera (ni `Math.rand
 
 - **Generador:** reparte el juego completo sobre un teselado aleatorio y hace escalada (intercambia o gira fichas y acepta el cambio si el número de soluciones, con tope de 40, no sube) hasta que la solución plantada es la única. Unos pocos ms por puzle, incluso en 10×11.
 - **Graduador:** resuelve como una persona, usando siempre la técnica más sencilla que avance. Nivel 1: singles (celda con una sola pareja posible, ficha con un solo hueco). Nivel 2: huecos de una ficha que comparten celda y colocaciones que dejan sin opciones a una celda vecina u otra ficha. Nivel 3: lookahead de un paso (suponer y seguir los singles hasta contradicción). Cada paso es un `Deduction`, la misma unidad que usarán las pistas graduadas.
-- Los niveles se generan offline (`npm run levels`) y se guardan en `src/levels/packs/*.json` (~300 bytes por nivel). Un test comprueba en CI que cada nivel tiene exactamente una solución, que coincide con la guardada, y que su grado es el declarado.
+- Los niveles se generan offline (`npm run levels`) desde `scripts/level-packs.ts` y se guardan en `src/levels/packs/*.json` (~300 bytes por nivel). Cada pack se describe por grupos (tamaño, grado, cuántos); dentro de un grupo se ordenan de menos a más pasos de deducción, y ningún puzle se repite en todo el juego.
+- **Los ids de nivel son permanentes** (`<pack>-<nn>`, p. ej. `medium-07`): de ellos cuelgan el progreso y las partidas guardadas. No se renombra ni se reordena un pack publicado; se añade uno nuevo.
+- Un test comprueba en CI que cada nivel tiene exactamente una solución, que coincide con la guardada, que su grado es el declarado, que no hay puzles repetidos y que la dificultad sube dentro de cada pack.
 
 ## Qué validar
 
 - **El gesto:** ¿deslizar para colocar se siente natural? ¿Hay colocaciones accidentales? (Umbral: 35 % de la celda, en `src/ui/board/geometry.ts`.)
 - **Muros:** ¿se entiende el botón (un toque, doble toque para fijar)? ¿Se quitan muros o fichas sin querer al tocar? (Zona de toque: `WALL_REACH_OVER_TILE` en `src/ui/board/geometry.ts`; doble toque: `DOUBLE_TAP_MS` en `src/ui/board/wall-mode.ts`.)
 - **Guardado:** cerrar la app a mitad de un nivel y volver: fichas, muros, deshacer y tiempo tienen que seguir igual.
-- **Tamaño máximo:** el 9×10 da celdas de ~34 pt en un iPhone de 390 pt de ancho. ¿Se juega bien o el límite debe ser 8×9?
+- **Rastreador:** ¿ayuda o estorba? ¿Se entiende qué significa cada color?
+- **Tamaño máximo:** el 9×10 da celdas de ~34 pt en un iPhone de 390 pt de ancho. ¿Se juega bien o el límite debe ser 8×9? (Cambiarlo es una línea en `scripts/level-packs.ts`.)
+- **Curva:** ¿cada pack se siente un poco más difícil que el anterior?
 
 ## Siguiente (hito 1)
 
-- Bloque 2: rastreador de pares y packs de niveles (~60) con navegación por packs.
 - Bloque 3: "tocar A y luego B" (VoiceOver), etiquetas de accesibilidad y ajustes mínimos.

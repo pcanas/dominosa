@@ -1,0 +1,138 @@
+{
+  "id": "expert",
+  "formatVersion": 1,
+  "levels": [
+    {
+      "id": "expert-01",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "235611557647002506838643104547225118280152886081344621522303777301253044344717866658876307",
+      "solution": "DDDDDDRLDUUUUUUDDUDRLRLDUUDURLRLURLUDRLDDDDDDURLUUUUUURLRLDRLRLDDDDURLRLUUUUDRLRLRLRLURLRL",
+      "seed": "expert/g0/18"
+    },
+    {
+      "id": "expert-02",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "138458445844003701133370884327864720555063366714365672016224117762051207683165405887182225",
+      "solution": "RLRLRLDRLDRLRLDUDDURLRLUDUUDDDRLDURLUUURLUDRLDDDDRLURLUUUURLDDDDRLRLDUUUURLRLURLDRLRLRLRLU",
+      "seed": "expert/g0/39"
+    },
+    {
+      "id": "expert-03",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "553006457161347250081120144888223417565766317538444262722358712361368285703860704500148736",
+      "solution": "DRLRLDDRLUDDRLUUDDDUUDRLDUUURLURLURLDDDDRLRLDUUUURLRLUDRLDDRLDDURLUURLUURLRLRLDDDRLRLRLUUU",
+      "seed": "expert/g0/44"
+    },
+    {
+      "id": "expert-04",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "155420508540688411556236771882022530133706638316707250823735177866274614340174630254184248",
+      "solution": "DRLDDRLDDUDDUUDDUUDUURLUURLUDRLRLDDDDURLDDUUUURLDUUDDDDDDURLUUUUUURLDDRLRLDDDUURLRLUUURLRL",
+      "seed": "expert/g0/4"
+    },
+    {
+      "id": "expert-05",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "808432543526606853338577744020345662041111302273007852866821111814043655563727407746288157",
+      "solution": "RLRLDRLDDDDRLUDDUUUURLDUURLRLDDURLDDRLUURLDUURLDRLDUDDRLURLUDUURLDDDDURLDDUUUUDDDUURLRLUUU",
+      "seed": "expert/g0/57"
+    },
+    {
+      "id": "expert-06",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "814623357037666773810002743718043648516461408815582728465575441485270217226230053018532316",
+      "solution": "DRLDRLRLDUDDUDDRLUDUUDUUDDDURLURLUUUDDDDRLRLDUUUURLDDURLDRLDUUDRLURLURLURLDDDDDDDRLUUUUUUU",
+      "seed": "expert/g0/54"
+    },
+    {
+      "id": "expert-07",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "841455728341052200380868771246815633418345570724711670786605046434866273265085701253312123",
+      "solution": "DDDRLRLRLUUURLRLDDDRLDRLDUUURLURLURLDRLDDRLDDURLUURLUURLRLDDRLDRLRLUURLURLDDRLDDDRLUURLUUU",
+      "seed": "expert/g0/36"
+    },
+    {
+      "id": "expert-08",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "115603032143105686043572131885187742566763282401703276844185274020240325655410364887857637",
+      "solution": "DRLDDRLDDURLUURLUURLDRLDDRLRLURLUURLDRLDDDDRLURLUUUURLDRLDDDDRLURLUUUURLDRLRLDDRLURLRLUURL",
+      "seed": "expert/g0/14"
+    },
+    {
+      "id": "expert-09",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "237268480176428550852073863612050823651551301628365447864103711577430744617722033418548602",
+      "solution": "DDRLDDRLDUURLUURLUDDDRLRLRLUUURLRLRLDDDDDRLDDUUUUURLUUDDDRLDDRLUUURLUURLRLDDDDDRLRLUUUUURL",
+      "seed": "expert/g0/13"
+    },
+    {
+      "id": "expert-10",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "778261674738022084803778032355628186058664176341214310657327510211350846575352441044820563",
+      "solution": "DRLDRLDRLURLURLURLRLRLDDDRLDDRLUUURLUUDRLDDRLRLURLUUDDDDDDDDDUUUUUUUUURLRLDRLRLRLRLURLRLRL",
+      "seed": "expert/g0/49"
+    },
+    {
+      "id": "expert-11",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "756081280748171180722521583146522402108035556648477283657106076631487556236440431034833237",
+      "solution": "RLRLRLDDDRLDDDDUUUDDUUUUDRLUUDDRLURLRLUURLDDDRLDDRLUUURLUUDDRLDDDDDUURLUUUUUDRLRLRLRLURLRL",
+      "seed": "expert/g0/30"
+    },
+    {
+      "id": "expert-12",
+      "difficulty": "expert",
+      "order": 8,
+      "rows": 10,
+      "cols": 9,
+      "grade": 3,
+      "cells": "351113334547082066627632257617125406748833708381600544270574326116575404450388128278126508",
+      "solution": "DRLRLDDDDUDRLDUUUUDURLURLRLURLDRLDDDDRLURLUUUUDDRLRLRLDUUDDRLRLURLUUDDRLRLDDDUUDDRLUUURLUU",
+      "seed": "expert/g0/27"
+    }
+  ]
+}

@@ -30,3 +30,4 @@ export {
   type SavedGames,
 } from './saved-game';
 export { boardStatus, type BoardStatus } from './status';
+export { pairSlots, trackPairs, type PairSlots, type TrackedPair } from './tracker';

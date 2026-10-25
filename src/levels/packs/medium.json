@@ -1,0 +1,138 @@
+{
+  "id": "medium",
+  "formatVersion": 1,
+  "levels": [
+    {
+      "id": "medium-01",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 2,
+      "cells": "22300626133133011446605551031246211560025526434435245406",
+      "solution": "RLDRLDDRLURLUURLDDDRLRLUUURLRLDRLRLRLURLRLDRLDDRLURLUURL",
+      "seed": "medium/g0/10"
+    },
+    {
+      "id": "medium-02",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 2,
+      "cells": "51261333340560641026655252530162054450344141123632002461",
+      "solution": "RLRLRLDRLRLRLURLDRLRLRLURLRLRLDDRLDRLUURLUDRLDDRLURLUURL",
+      "seed": "medium/g0/22"
+    },
+    {
+      "id": "medium-03",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 2,
+      "cells": "20310666653512305226540446311136351440234102524610352405",
+      "solution": "DDDRLRLUUUDDRLDDDUURLUUURLRLRLRLDRLDDRLURLUUDDDRLRLUUURL",
+      "seed": "medium/g0/2"
+    },
+    {
+      "id": "medium-04",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 2,
+      "cells": "50044162133506431141465602353301220624566612245001554233",
+      "solution": "RLDDDRLRLUUURLDRLDDRLURLUURLDDDDDRLUUUUURLDRLDDRLURLUURL",
+      "seed": "medium/g0/20"
+    },
+    {
+      "id": "medium-05",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 2,
+      "cells": "45615021115336506542166252243202053440431003434261301656",
+      "solution": "RLDRLRLRLUDDRLRLDUUDDRLURLUURLDDDRLRLUUUDDDDDDDUUUUUUURL",
+      "seed": "medium/g0/23"
+    },
+    {
+      "id": "medium-06",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 2,
+      "cells": "14240631536153215115030566560026256413436234014424253002",
+      "solution": "DDDDDDDUUUUUUURLRLDDDDRLDUUUURLURLDDRLDRLUURLURLDRLRLRLU",
+      "seed": "medium/g0/8"
+    },
+    {
+      "id": "medium-07",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 2,
+      "cells": "55664354324162120465341141120604031362650560324251032035",
+      "solution": "DDRLRLDUUDRLDURLURLUDDRLDDDUURLUUUDRLRLRLUDDDDRLDUUUURLU",
+      "seed": "medium/g0/18"
+    },
+    {
+      "id": "medium-08",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 2,
+      "cells": "23054546142451563040422416035501415625611233322163306006",
+      "solution": "DDDRLDDUUUDDUUDRLUUDDURLDDUUDRLUURLUDDRLRLDUURLDDURLRLUU",
+      "seed": "medium/g0/11"
+    },
+    {
+      "id": "medium-09",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 3,
+      "cells": "52131665250142031060243044363506141340651120346325625254",
+      "solution": "DDRLDRLUURLURLDDDRLDDUUURLUURLDRLRLRLUDRLDRLDURLURLURLRL",
+      "seed": "medium/g1/2"
+    },
+    {
+      "id": "medium-10",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 3,
+      "cells": "14425163652304403032126543650056600115221164246313524350",
+      "solution": "DRLRLDDURLRLUURLRLDDDDDRLUUUUUDRLRLDDUDRLDUUDURLURLURLRL",
+      "seed": "medium/g1/7"
+    },
+    {
+      "id": "medium-11",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 3,
+      "cells": "30555161522503313046653306410260544456602143421042112632",
+      "solution": "DRLRLDDUDRLDUUDURLUDDURLDDUUDDDUURLUUURLDDDRLRLUUURLRLRL",
+      "seed": "medium/g1/8"
+    },
+    {
+      "id": "medium-12",
+      "difficulty": "medium",
+      "order": 6,
+      "rows": 8,
+      "cols": 7,
+      "grade": 3,
+      "cells": "55012441163010022250034466513165603436211625244055462333",
+      "solution": "RLDRLDDRLURLUURLRLDRLRLRLURLRLDDDDDDDUUUUUUUDRLRLRLURLRL",
+      "seed": "medium/g1/1"
+    }
+  ]
+}

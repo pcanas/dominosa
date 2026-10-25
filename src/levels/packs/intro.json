@@ -1,0 +1,138 @@
+{
+  "id": "intro",
+  "formatVersion": 1,
+  "levels": [
+    {
+      "id": "intro-01",
+      "difficulty": "tutorial",
+      "order": 3,
+      "rows": 5,
+      "cols": 4,
+      "grade": 1,
+      "cells": "21323131322002031001",
+      "solution": "DDDDUUUUDDRLUUDDRLUU",
+      "seed": "intro/g0/2"
+    },
+    {
+      "id": "intro-02",
+      "difficulty": "tutorial",
+      "order": 3,
+      "rows": 5,
+      "cols": 4,
+      "grade": 1,
+      "cells": "02300211312003211233",
+      "solution": "DDRLUURLRLRLDDRLUURL",
+      "seed": "intro/g0/4"
+    },
+    {
+      "id": "intro-03",
+      "difficulty": "tutorial",
+      "order": 3,
+      "rows": 5,
+      "cols": 4,
+      "grade": 1,
+      "cells": "10133300122203112203",
+      "solution": "RLRLRLRLRLRLDDRLUURL",
+      "seed": "intro/g0/5"
+    },
+    {
+      "id": "intro-04",
+      "difficulty": "tutorial",
+      "order": 3,
+      "rows": 5,
+      "cols": 4,
+      "grade": 1,
+      "cells": "20332020331101321012",
+      "solution": "DDRLUURLDDRLUURLRLRL",
+      "seed": "intro/g0/7"
+    },
+    {
+      "id": "intro-05",
+      "difficulty": "tutorial",
+      "order": 3,
+      "rows": 5,
+      "cols": 4,
+      "grade": 1,
+      "cells": "00002231112321330123",
+      "solution": "RLDDRLUURLRLDRLDURLU",
+      "seed": "intro/g0/10"
+    },
+    {
+      "id": "intro-06",
+      "difficulty": "tutorial",
+      "order": 3,
+      "rows": 5,
+      "cols": 4,
+      "grade": 1,
+      "cells": "03301023012103312122",
+      "solution": "DRLDURLUDDDDUUUURLRL",
+      "seed": "intro/g0/11"
+    },
+    {
+      "id": "intro-07",
+      "difficulty": "tutorial",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 1,
+      "cells": "101121030402312034342144322340",
+      "solution": "DRLRLUDDRLDUUDDURLUUDRLDDURLUU",
+      "seed": "intro/g1/1"
+    },
+    {
+      "id": "intro-08",
+      "difficulty": "tutorial",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 1,
+      "cells": "324414213031240402331020013241",
+      "solution": "RLRLDRLRLUDRLRLURLRLDDDRLUUURL",
+      "seed": "intro/g1/2"
+    },
+    {
+      "id": "intro-09",
+      "difficulty": "tutorial",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 1,
+      "cells": "302233030341402143011212214404",
+      "solution": "DRLRLUDDRLDUUDDUDDUUDUURLURLRL",
+      "seed": "intro/g1/3"
+    },
+    {
+      "id": "intro-10",
+      "difficulty": "tutorial",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 1,
+      "cells": "341221134423102402203401034013",
+      "solution": "DDRLDUURLURLRLDRLRLUDDDDDUUUUU",
+      "seed": "intro/g1/5"
+    },
+    {
+      "id": "intro-11",
+      "difficulty": "tutorial",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 1,
+      "cells": "323301401004043343242241101122",
+      "solution": "DDRLDUURLUDDRLDUURLUDDDRLUUURL",
+      "seed": "intro/g1/6"
+    },
+    {
+      "id": "intro-12",
+      "difficulty": "tutorial",
+      "order": 4,
+      "rows": 6,
+      "cols": 5,
+      "grade": 1,
+      "cells": "341243140321124214340021302003",
+      "solution": "DDRLDUURLUDRLDDUDDUUDUURLURLRL",
+      "seed": "intro/g1/7"
+    }
+  ]
+}
