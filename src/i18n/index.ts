@@ -1,6 +1,7 @@
 import { getLocales } from 'expo-localization';
 
 import { useHydrated } from '@/platform/use-hydrated';
+import { useSettingsStore } from '@/state/settings-store';
 
 import { DEFAULT_LOCALE, isLocale, STRINGS, type Locale, type Strings } from './strings';
 
@@ -18,13 +19,20 @@ export function deviceLocale(): Locale {
   }
 }
 
+/** Language in use: the player's choice in settings, or the device's. */
+export function useLocale(): Locale {
+  const hydrated = useHydrated();
+  const setting = useSettingsStore((s) => s.language);
+  if (!hydrated) return DEFAULT_LOCALE;
+  return setting === 'system' ? deviceLocale() : setting;
+}
+
 /**
- * Strings for the device language. On the web the first render uses the
+ * Strings for the current language. On the web the first render uses the
  * default locale, matching the pre-rendered HTML.
  */
 export function useStrings(): Strings {
-  const hydrated = useHydrated();
-  return STRINGS[hydrated ? deviceLocale() : DEFAULT_LOCALE];
+  return STRINGS[useLocale()];
 }
 
 /** Formats milliseconds as m:ss (or h:mm:ss). */

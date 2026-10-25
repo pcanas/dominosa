@@ -52,6 +52,7 @@ export function Tile({ rect, variant, cell }: TileProps) {
   return (
     <Animated.View
       pointerEvents="none"
+      aria-hidden
       style={[
         styles.tile,
         {

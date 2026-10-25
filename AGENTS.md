@@ -7,6 +7,9 @@ This is an Expo/React Native mobile application (Dominosa puzzle game). Prioriti
 - Everything that depends on the device (colour scheme, locale, stored data) waits for `useHydrated()` so the static web render matches the first client render.
 - User-facing strings live in `src/i18n/strings.ts` (es is the reference; en and fr must match its shape).
 - Levels are generated offline with `npm run levels` from `scripts/level-packs.ts`; never edit pack JSON by hand. The level test must keep passing (unique solution, stored solution, declared grade).
+- The React Compiler is on (`experiments.reactCompiler`): render must be pure. Never read `Date.now()`, `Math.random()` or other changing values while rendering — the compiler memoizes the call and the value freezes. Keep them in state updated from an effect or event (see `Clock` in the play screen).
+- Accessibility: every control has a role and a label; toggles also spread `toggleState()` (from `IconButton`) because react-native-web does not map `accessibilityState.selected` to ARIA. What a board cell says, its VoiceOver actions and the announcement after each move come from `src/ui/board/a11y.ts`; new strings go in `strings.ts` under `a11y` / `announce`.
+- Screen reader play mode (pick a cell, then a neighbour) follows the system and only exists in the native app: browsers cannot tell whether a screen reader is on. For browser tests, build with `EXPO_PUBLIC_TEST_HOOKS=1` and call `window.__dominosaTest.setScreenReader(true)`; without the variable the hook is not in the bundle.
 - Code and comments in English; README in Spanish.
 - Run `npm run check` (typecheck, lint, format, tests) before declaring any task done.
 - Work on a branch, never straight on `main`: every push to `main` deploys to GitHub Pages. A branch is previewed with the manual **Deploy** workflow (`.github/workflows/deploy.yml`, input `ref`) and reaches `main` through a pull request.

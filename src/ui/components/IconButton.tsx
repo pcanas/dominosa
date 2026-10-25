@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { radius, spacing, useTheme } from '@/ui/theme';
 
@@ -47,6 +47,7 @@ export function IconButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={selected === undefined ? { disabled } : { disabled, selected }}
+      {...toggleState(selected)}
       hitSlop={6}
       style={({ pressed }) => [styles.root, disabled && styles.disabled, pressed && styles.pressed]}>
       {({ pressed }) => (
@@ -70,6 +71,7 @@ export function IconButton({
           {showLabel && (
             <AppText
               variant="caption"
+              maxFontSizeMultiplier={1.3}
               tone={tone === 'accent' ? 'accent' : selected ? 'primary' : 'secondary'}>
               {label}
             </AppText>
@@ -78,6 +80,15 @@ export function IconButton({
       )}
     </Pressable>
   );
+}
+
+/**
+ * On the web a toggle is a button with `aria-pressed`: react-native-web does
+ * not turn `accessibilityState.selected` into anything screen readers use.
+ * React Native's own types do not list the attribute, hence the cast.
+ */
+export function toggleState(on: boolean | undefined): object {
+  return Platform.OS === 'web' && on !== undefined ? { 'aria-pressed': on } : {};
 }
 
 const styles = StyleSheet.create({

@@ -41,8 +41,10 @@ export function LevelTile({ level, solved, inProgress, onPress }: LevelTileProps
           borderColor: solved ? palette.success : palette.tileBorder,
         },
       ]}>
-      <AppText variant="heading">{level.number}</AppText>
-      <AppText variant="caption" tone="secondary">
+      <AppText variant="heading" maxFontSizeMultiplier={1.3}>
+        {level.number}
+      </AppText>
+      <AppText variant="caption" tone="secondary" maxFontSizeMultiplier={1.3}>
         {t.gridSize(cols, rows)}
       </AppText>
       <DepthDots depth={level.grade} size={5} />

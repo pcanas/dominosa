@@ -7,6 +7,7 @@ import type { DominoId } from '@/core';
 import type { TrackedPair } from '@/game';
 import { useStrings } from '@/i18n';
 import { AppText } from '@/ui/components/AppText';
+import { toggleState } from '@/ui/components/IconButton';
 import { fonts, radius, spacing, useTheme } from '@/ui/theme';
 
 interface PairTrackerProps {
@@ -60,10 +61,10 @@ export function PairTracker({ order, pairs, selected, onSelect, onClose }: PairT
       style={[styles.sheet, { backgroundColor: palette.surface, borderColor: palette.tileBorder }, animated]}>
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <AppText variant="label" accessibilityRole="header">
+          <AppText variant="label" accessibilityRole="header" maxFontSizeMultiplier={1.4}>
             {t.tracker.title}
           </AppText>
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="caption" tone="secondary" maxFontSizeMultiplier={1.4}>
             {t.tracker.placed(placedCount, pairs.length)}
           </AppText>
         </View>
@@ -95,7 +96,7 @@ export function PairTracker({ order, pairs, selected, onSelect, onClose }: PairT
           ))}
       </View>
 
-      <AppText variant="caption" tone="secondary" style={styles.hint}>
+      <AppText variant="caption" tone="secondary" maxFontSizeMultiplier={1.4} style={styles.hint}>
         {t.tracker.hint}
       </AppText>
     </Animated.View>
@@ -130,8 +131,11 @@ function PairChip({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={t.a11y.pair(lo, hi, pair.placed)}
+      accessibilityLabel={[t.a11y.pair(lo, hi, pair.placed), selected && t.a11y.pairHighlighted]
+        .filter(Boolean)
+        .join(', ')}
       accessibilityState={{ selected }}
+      {...toggleState(selected)}
       hitSlop={2}
       style={({ pressed }) => [
         styles.chip,
@@ -143,13 +147,25 @@ function PairChip({
           borderWidth: selected ? 2 : 1,
         },
       ]}>
-      <AppText style={[styles.chipText, { fontSize, lineHeight: height - 4, color: tone.text }]}>
+      <AppText
+        allowFontScaling={false}
+        style={[styles.chipText, { fontSize, lineHeight: height - 4, color: tone.text }]}>
         {lo}
       </AppText>
       <View style={[styles.chipDivider, { backgroundColor: tone.border }]} />
-      <AppText style={[styles.chipText, { fontSize, lineHeight: height - 4, color: tone.text }]}>
+      <AppText
+        allowFontScaling={false}
+        style={[styles.chipText, { fontSize, lineHeight: height - 4, color: tone.text }]}>
         {hi}
       </AppText>
+      {pair.placed > 1 && (
+        // Repeated pairs carry a count, not only a colour.
+        <View style={[styles.count, { backgroundColor: palette.accent, borderColor: palette.surface }]}>
+          <AppText allowFontScaling={false} style={[styles.countText, { color: palette.surface }]}>
+            {`×${pair.placed}`}
+          </AppText>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -182,4 +198,17 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: fonts.number, fontVariant: ['tabular-nums'], textAlign: 'center' },
   chipDivider: { width: 1, height: '50%', opacity: 0.7 },
   hint: { textAlign: 'center' },
+  count: {
+    position: 'absolute',
+    top: -7,
+    right: -7,
+    minWidth: 20,
+    height: 16,
+    paddingHorizontal: 3,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countText: { fontFamily: fonts.bodyBold, fontSize: 10, lineHeight: 12 },
 });
