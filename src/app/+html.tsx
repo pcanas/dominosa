@@ -1,4 +1,4 @@
-import { ScrollViewStyleReset } from 'expo-router/html';
+import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
 /**
@@ -16,8 +16,11 @@ body { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none;
 `;
 
 export default function Root({ children }: PropsWithChildren) {
+  // Expo Router 58 passes its own head tags (scripts, styles, metadata) and body nodes through this
+  // context; leaving out `bodyNodes` stops the page from hydrating.
+  const { htmlAttributes, bodyAttributes, headNodes, bodyNodes } = useServerDocumentContext();
   return (
-    <html lang="es">
+    <html lang="es" {...htmlAttributes}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -35,8 +38,12 @@ export default function Root({ children }: PropsWithChildren) {
 
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: globalCss }} />
+        {headNodes}
       </head>
-      <body>{children}</body>
+      <body {...bodyAttributes}>
+        {children}
+        {bodyNodes}
+      </body>
     </html>
   );
 }

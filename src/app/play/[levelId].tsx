@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
-import { useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { dominoId, dominoPips, type CellIndex, type DominoId } from '@/core';
 import {
@@ -22,9 +22,13 @@ import {
 import { formatDuration, useStrings, type Strings } from '@/i18n';
 import { getLevel, LEVELS, nextLevel, type Level } from '@/levels';
 import { haptics } from '@/platform/haptics';
+import { announce, useScreenReader } from '@/platform/screen-reader';
 import { useSavedGamesStore } from '@/state/saved-games-store';
-import { useSessionStore } from '@/state/session-store';
+import { elapsedNow, useSessionStore, type DispatchOutcome } from '@/state/session-store';
+import { useSettingsStore } from '@/state/settings-store';
+import { announcementFor, cellActions, describeCells } from '@/ui/board/a11y';
 import { Board } from '@/ui/board/Board';
+import { pickCell } from '@/ui/board/tap-select';
 import {
   afterWallDrawn,
   tapWallButton,
@@ -69,6 +73,13 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const [selectedPair, setSelectedPair] = useState<DominoId | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const vibration = useSettingsStore((s) => s.vibration);
+  const screenReaderOn = useScreenReader();
+  /** Cell picked first while playing with a screen reader. */
+  const [pickedCell, setPickedCell] = useState<CellIndex | null>(null);
+  const selectedCell = screenReaderOn ? pickedCell : null;
+  /** Last message for the visually hidden live region (screen readers on Android and the web). */
+  const [announcement, setAnnouncement] = useState('');
 
   useEffect(() => {
     if (!savedGamesReady) return;
@@ -85,6 +96,16 @@ function PlayScreen({ level }: { readonly level: Level }) {
     return () => subscription.remove();
   }, [pause, resume]);
 
+  // Leaving the screen without unmounting it (settings is pushed on top) stops the clock too.
+  useFocusEffect(
+    useCallback(() => {
+      if (useSessionStore.getState().levelId === level.id) resume();
+      return () => {
+        if (useSessionStore.getState().levelId === level.id) pause();
+      };
+    }, [level.id, pause, resume]),
+  );
+
   useEffect(
     () => () => {
       if (resetTimer.current) clearTimeout(resetTimer.current);
@@ -100,14 +121,37 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const { order } = level.puzzle;
   const highlight = selectedPair !== null && !solved ? pairSlots(game, selectedPair) : null;
   const packName = t.packs[level.packId] ?? level.packId;
+  const descriptions = describeCells(game, selectedCell, t);
 
-  const act = (action: GameAction) => {
-    const outcome = dispatch(action);
+  const say = (message: string) => {
+    // Alternate a zero-width space so the same message twice is still read twice.
+    setAnnouncement((previous) => (previous.endsWith('\u200B') ? message : `${message}\u200B`));
+    announce(message);
+  };
+
+  const feedback = (outcome: DispatchOutcome) => {
+    if (!vibration) return;
     if (outcome === 'placed') haptics.place();
     else if (outcome === 'removed' || outcome === 'wallRemoved') haptics.remove();
     else if (outcome === 'wallAdded') haptics.wall();
     else if (outcome === 'blocked') haptics.blocked();
     else if (outcome === 'solved') haptics.solved();
+  };
+
+  const act = (action: GameAction) => {
+    const outcome = dispatch(action);
+    feedback(outcome);
+    const after = useSessionStore.getState();
+    const message = after.game
+      ? announcementFor(
+          action,
+          outcome,
+          after.game,
+          t,
+          t.status.solved(formatDuration(after.solvedInMs ?? 0)),
+        )
+      : null;
+    if (message) say(message);
     // A single-use wall mode ends with the wall it was armed for; a solve ends any mode.
     if (outcome === 'wallAdded') setWallButton(afterWallDrawn);
     if (outcome === 'solved') {
@@ -122,6 +166,20 @@ function PlayScreen({ level }: { readonly level: Level }) {
     }
   };
 
+  /** A cell picked while playing with a screen reader. */
+  const onPickCell = (cell: CellIndex) => {
+    const { selected, action } = pickCell(selectedCell, cell, {
+      cols: level.puzzle.cols,
+      partnerOf: (c) => game.partner[c] ?? -1,
+      hasWall: (a, b) => wallPairs(game).some((w) => w.a === Math.min(a, b) && w.b === Math.max(a, b)),
+      wallMode: wallButton.mode !== 'off',
+    });
+    setPickedCell(selected);
+    if (action) act(action);
+    else if (selected !== null) say(t.announce.selected(descriptions[selected]!));
+    else say(t.announce.deselected);
+  };
+
   const onSelectPair = (domino: DominoId) => {
     if (domino === selectedPair) {
       setSelectedPair(null);
@@ -129,6 +187,15 @@ function PlayScreen({ level }: { readonly level: Level }) {
     }
     setSelectedPair(domino);
     setTrackerOpen(false);
+    const slots = pairSlots(game, domino);
+    const label = pairLabel(domino, order);
+    say(
+      slots.placed.length > 0
+        ? t.status.pairPlaced(label)
+        : slots.open.length === 0
+          ? t.status.pairNone(label)
+          : t.status.pairOpen(label, slots.open.length),
+    );
   };
 
   const onReset = () => {
@@ -162,16 +229,24 @@ function PlayScreen({ level }: { readonly level: Level }) {
           <AppText variant="heading" accessibilityRole="header">
             {t.levelNumber(level.number)}
           </AppText>
-          <AppText variant="caption" tone="secondary">
-            {packName} · {t.gridSize(level.puzzle.cols, level.puzzle.rows)}
-          </AppText>
+          <View style={styles.subtitle}>
+            <AppText variant="caption" tone="secondary" maxFontSizeMultiplier={1.4}>
+              {packName} · {t.gridSize(level.puzzle.cols, level.puzzle.rows)}
+            </AppText>
+            <Clock levelId={level.id} />
+          </View>
         </View>
-        <View style={styles.topBarSpacer} />
+        <IconButton
+          icon="settings-outline"
+          label={t.actions.settings}
+          onPress={() => router.push('/settings')}
+        />
       </View>
 
       <StatusLine
         status={status}
         wallMode={wallButton.mode}
+        pickMode={screenReaderOn}
         pair={
           highlight && selectedPair !== null
             ? { label: pairLabel(selectedPair, order), slots: highlight }
@@ -193,9 +268,20 @@ function PlayScreen({ level }: { readonly level: Level }) {
         onRemove={(cell: CellIndex) => act({ type: 'remove', cell })}
         onRemoveWall={(a: CellIndex, b: CellIndex) => act({ type: 'removeWall', a, b })}
         highlight={highlight}
+        descriptions={descriptions}
+        screenReader={
+          screenReaderOn
+            ? {
+                selected: selectedCell,
+                onPick: onPickCell,
+                actionsFor: (cell: CellIndex) => cellActions(game, cell, t),
+                onAction: act,
+              }
+            : null
+        }
       />
 
-      <View style={styles.toolbar}>
+      <View style={[styles.toolbar, solved && styles.toolbarPair]}>
         {solved ? (
           <>
             <IconButton icon="refresh" label={t.actions.replay} onPress={onReset} showLabel />
@@ -219,7 +305,13 @@ function PlayScreen({ level }: { readonly level: Level }) {
             <IconButton
               icon="ban-outline"
               label={t.actions.wall}
-              accessibilityLabel={wallButton.mode === 'locked' ? t.a11y.wallLocked : t.actions.wall}
+              accessibilityLabel={
+                wallButton.mode === 'locked'
+                  ? t.a11y.wallLocked
+                  : wallButton.mode === 'once'
+                    ? t.a11y.wallOnce
+                    : t.actions.wall
+              }
               onPress={() => setWallButton((current) => tapWallButton(current, Date.now()))}
               selected={wallButton.mode !== 'off'}
               badge={wallButton.mode === 'locked' ? 'lock-closed' : undefined}
@@ -244,6 +336,11 @@ function PlayScreen({ level }: { readonly level: Level }) {
         )}
       </View>
 
+      {/* Spoken by TalkBack and by screen readers on the web; VoiceOver gets `announce`. */}
+      <Text accessibilityLiveRegion="polite" aria-live="polite" style={styles.srOnly}>
+        {announcement}
+      </Text>
+
       {trackerOpen && !solved && (
         <PairTracker
           order={order}
@@ -254,6 +351,34 @@ function PlayScreen({ level }: { readonly level: Level }) {
         />
       )}
     </Screen>
+  );
+}
+
+/** Time played, under the title, when the "show time" setting is on. Ticks on its own. */
+function Clock({ levelId }: { readonly levelId: string }) {
+  const t = useStrings();
+  const show = useSettingsStore((s) => s.showTimer);
+  const session = useSessionStore((s) => (s.levelId === levelId ? s : null));
+  const running = show && session !== null && session.runningSince !== null;
+  // The current time lives in state: the React Compiler memoizes pure-looking calls, so reading
+  // Date.now() during render would freeze the clock on its first value.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+  if (!show || !session) return null;
+  const time = formatDuration(session.solvedInMs ?? elapsedNow(session, now));
+  return (
+    <AppText
+      variant="caption"
+      tone="secondary"
+      maxFontSizeMultiplier={1.4}
+      accessibilityLabel={t.a11y.timer(time)}
+      style={styles.clock}>
+      {` · ${time}`}
+    </AppText>
   );
 }
 
@@ -271,6 +396,7 @@ interface SelectedPair {
 function StatusLine({
   status,
   wallMode,
+  pickMode,
   pair,
   onClearPair,
   solvedInMs,
@@ -278,16 +404,19 @@ function StatusLine({
 }: {
   readonly status: BoardStatus;
   readonly wallMode: WallMode;
+  /** Playing with a screen reader: cells are picked, not swiped. */
+  readonly pickMode: boolean;
   readonly pair: SelectedPair | null;
   readonly onClearPair: () => void;
   readonly solvedInMs: number | null;
   readonly t: Strings;
 }) {
   const { palette } = useTheme();
-  const { text, tone, icon } = describeStatus(status, wallMode, pair, solvedInMs, t);
+  const { text, tone, icon } = describeStatus(status, wallMode, pickMode, pair, solvedInMs, t);
   const showClear = pair !== null && status.kind !== 'solved';
   return (
-    <View style={styles.status} accessibilityLiveRegion="polite">
+    // Not a live region: moves are announced by the play screen, without repeating this line.
+    <View style={styles.status}>
       {icon && (
         <Ionicons
           name={icon}
@@ -298,7 +427,8 @@ function StatusLine({
       <AppText
         variant="label"
         tone={tone === 'secondary' ? 'secondary' : 'primary'}
-        numberOfLines={2}
+        numberOfLines={3}
+        maxFontSizeMultiplier={1.4}
         style={styles.statusText}>
         {text}
       </AppText>
@@ -319,6 +449,7 @@ function StatusLine({
 function describeStatus(
   status: BoardStatus,
   wallMode: WallMode,
+  pickMode: boolean,
   pair: SelectedPair | null,
   solvedInMs: number | null,
   t: Strings,
@@ -337,13 +468,15 @@ function describeStatus(
   }
   // Wall mode is worth a reminder, but never hides a warning or the solve.
   if (wallMode !== 'off' && (status.kind === 'empty' || status.kind === 'progress')) {
+    const icon = wallMode === 'locked' ? 'lock-closed-outline' : 'ban-outline';
+    if (pickMode) return { text: t.status.wallPick, tone: 'secondary', icon };
     return wallMode === 'locked'
-      ? { text: t.status.wallLocked, tone: 'secondary', icon: 'lock-closed-outline' }
-      : { text: t.status.wallOnce, tone: 'secondary', icon: 'ban-outline' };
+      ? { text: t.status.wallLocked, tone: 'secondary', icon }
+      : { text: t.status.wallOnce, tone: 'secondary', icon };
   }
   switch (status.kind) {
     case 'empty':
-      return { text: t.status.start, tone: 'secondary', icon: null };
+      return { text: pickMode ? t.status.startPick : t.status.start, tone: 'secondary', icon: null };
     case 'progress':
       return { text: t.status.progress(status.placed, status.total), tone: 'secondary', icon: null };
     case 'duplicates':
@@ -364,9 +497,11 @@ function describeStatus(
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.sm },
   titleBlock: { flex: 1, alignItems: 'center' },
-  topBarSpacer: { minWidth: 64 },
+  subtitle: { flexDirection: 'row', alignItems: 'center' },
+  clock: { fontVariant: ['tabular-nums'] },
+  srOnly: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 },
   status: {
-    height: 52,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -375,11 +510,16 @@ const styles = StyleSheet.create({
   },
   statusText: { textAlign: 'center', flexShrink: 1 },
   clear: { padding: 2 },
+  // Evenly spread up to a comfortable width, so four buttons still fit on a 320 pt screen.
   toolbar: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xl,
+    justifyContent: 'space-evenly',
+    gap: spacing.xs,
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
     paddingTop: spacing.md,
     paddingBottom: spacing.lg,
   },
+  toolbarPair: { justifyContent: 'center', gap: spacing.xl },
 });

@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type AccessibilityActionEvent,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 
 import { makePair, type CellIndex, type Pair, type Puzzle } from '@/core';
-import type { PairSlots, PlacedTile } from '@/game';
-import { useStrings } from '@/i18n';
+import type { GameAction, PairSlots, PlacedTile } from '@/game';
 import { fonts, radius, useTheme } from '@/ui/theme';
 
 import {
@@ -17,6 +24,7 @@ import {
   type BoardMetrics,
   type TapTarget,
 } from './geometry';
+import type { CellAction } from './a11y';
 import { Tile } from './Tile';
 import { useBoardGesture, type BoardTool, type DragState } from './useBoardGesture';
 
@@ -36,11 +44,26 @@ interface BoardProps {
   readonly onRemoveWall: (a: CellIndex, b: CellIndex) => void;
   /** Slots of the pair picked in the tracker, shown on the board. */
   readonly highlight?: PairSlots | null;
+  /** What each cell says to screen readers (see `describeCells`). */
+  readonly descriptions: readonly string[];
+  /**
+   * Set while a screen reader is on: swipes are off and cells become buttons
+   * that are picked one by one (see `pickCell`), with VoiceOver actions.
+   */
+  readonly screenReader?: ScreenReaderBoard | null;
+}
+
+export interface ScreenReaderBoard {
+  readonly selected: CellIndex | null;
+  readonly onPick: (cell: CellIndex) => void;
+  readonly actionsFor: (cell: CellIndex) => readonly CellAction[];
+  readonly onAction: (action: GameAction) => void;
 }
 
 /**
  * The playing board. Fills the space it is given and sizes cells to fit.
- * Layers, bottom to top: frame → cells → dominoes → walls → drag previews → numbers.
+ * Layers, bottom to top: frame → cells → dominoes → walls → drag previews → numbers → the
+ * transparent cells screen readers use.
  */
 export function Board({
   puzzle,
@@ -53,9 +76,10 @@ export function Board({
   onRemove,
   onRemoveWall,
   highlight = null,
+  descriptions,
+  screenReader = null,
 }: BoardProps) {
   const { palette } = useTheme();
-  const t = useStrings();
   const [space, setSpace] = useState<{ width: number; height: number } | null>(null);
 
   const metrics = space ? computeMetrics(puzzle.rows, puzzle.cols, space.width, space.height, METRICS) : null;
@@ -65,7 +89,7 @@ export function Board({
 
   const { gesture, drag } = useBoardGesture({
     metrics,
-    enabled: !solved,
+    enabled: !solved && !screenReader,
     tool,
     onPlace,
     onWall,
@@ -87,43 +111,28 @@ export function Board({
       {metrics && metrics.cell > 0 && (
         <GestureDetector gesture={gesture} touchAction="none" userSelect="none">
           <View
-            accessibilityLabel={t.a11y.board}
             style={[
               styles.frame,
               { width: metrics.width, height: metrics.height, backgroundColor: palette.board },
             ]}>
-            {puzzle.cells.map((pip, i) => {
+            {puzzle.cells.map((_pip, i) => {
               const r = cellRect(metrics, i);
               const isStart = drag?.start === i && drag.target < 0;
               // Cells under a domino are hidden so the tile's edge reads cleanly.
               const covered = coveredCells.has(i);
-              return (
-                <View
-                  key={`cell-${i}`}
-                  accessible
-                  accessibilityLabel={t.a11y.cell(
-                    Math.floor(i / puzzle.cols) + 1,
-                    (i % puzzle.cols) + 1,
-                    pip,
-                  )}
-                  style={[
-                    styles.cell,
-                    {
-                      left: r.x,
-                      top: r.y,
-                      width: r.width,
-                      height: r.height,
-                      borderRadius: Math.round(metrics.cell * 0.2),
-                      backgroundColor: covered
-                        ? 'transparent'
-                        : isStart
-                          ? palette.surfacePressed
-                          : palette.cell,
-                      borderColor: isStart ? palette.tileBorder : 'transparent',
-                    },
-                  ]}
-                />
-              );
+              const style = [
+                styles.cell,
+                {
+                  left: r.x,
+                  top: r.y,
+                  width: r.width,
+                  height: r.height,
+                  borderRadius: Math.round(metrics.cell * 0.2),
+                  backgroundColor: covered ? 'transparent' : isStart ? palette.surfacePressed : palette.cell,
+                  borderColor: isStart ? palette.tileBorder : 'transparent',
+                },
+              ];
+              return <View key={`cell-${i}`} style={style} />;
             })}
 
             {!solved &&
@@ -165,6 +174,10 @@ export function Board({
                 />
               ))}
 
+            {screenReader?.selected != null && (
+              <SelectionRing metrics={metrics} cell={screenReader.selected} color={palette.accent} />
+            )}
+
             {drag?.tool === 'domino' && drag.target >= 0 && (
               <Tile
                 key={`ghost-${drag.start}-${drag.target}`}
@@ -187,7 +200,8 @@ export function Board({
                   />
                 ))}
 
-            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            {/* Numbers are part of each cell's description, so the layer is hidden from screen readers. */}
+            <View pointerEvents="none" aria-hidden style={StyleSheet.absoluteFill}>
               {puzzle.cells.map((pip, i) => {
                 const r = cellRect(metrics, i);
                 return (
@@ -211,6 +225,46 @@ export function Board({
                 );
               })}
             </View>
+
+            {/*
+              What screen readers see and touch: one transparent element per cell, drawn last so no
+              layer covers it (VoiceOver's touch exploration and its activation tap find the top view).
+            */}
+            {puzzle.cells.map((_pip, i) => {
+              const r = cellRect(metrics, i);
+              const rect = { left: r.x, top: r.y, width: r.width, height: r.height };
+              if (!screenReader) {
+                return (
+                  <View
+                    key={`a11y-${i}`}
+                    accessible
+                    accessibilityLabel={descriptions[i]}
+                    // Safari only reads a label on an element with a role.
+                    role={Platform.OS === 'web' ? 'img' : undefined}
+                    style={[styles.a11yCell, rect]}
+                  />
+                );
+              }
+              const actions = screenReader.actionsFor(i);
+              const selected = screenReader.selected === i;
+              return (
+                <Pressable
+                  key={`a11y-${i}`}
+                  onPress={() => screenReader.onPick(i)}
+                  disabled={solved}
+                  accessibilityRole="button"
+                  accessibilityLabel={descriptions[i]}
+                  accessibilityState={{ selected, disabled: solved }}
+                  aria-selected={selected}
+                  accessibilityActions={actions.map(({ name, label }) => ({ name, label }))}
+                  onAccessibilityAction={(e: AccessibilityActionEvent) => {
+                    const picked = actions.find((a) => a.name === e.nativeEvent.actionName);
+                    if (picked) screenReader.onAction(picked.action);
+                  }}
+                  style={[styles.a11yCell, rect]}
+                />
+              );
+            })}
           </View>
         </GestureDetector>
       )}
@@ -236,6 +290,7 @@ function WallBar({
   return (
     <View
       pointerEvents="none"
+      aria-hidden
       style={[
         styles.wall,
         {
@@ -246,6 +301,37 @@ function WallBar({
           borderRadius: thickness / 2,
           backgroundColor: pressed ? palette.accent : palette.wall,
           opacity,
+        },
+      ]}
+    />
+  );
+}
+
+/** Ring around the cell picked first while playing with a screen reader. */
+function SelectionRing({
+  metrics,
+  cell,
+  color,
+}: {
+  readonly metrics: BoardMetrics;
+  readonly cell: CellIndex;
+  readonly color: string;
+}) {
+  const r = cellRect(metrics, cell);
+  const out = 3;
+  return (
+    <View
+      pointerEvents="none"
+      aria-hidden
+      style={[
+        styles.ring,
+        {
+          left: r.x - out,
+          top: r.y - out,
+          width: r.width + 2 * out,
+          height: r.height + 2 * out,
+          borderRadius: Math.round(metrics.cell * 0.2) + out,
+          borderColor: color,
         },
       ]}
     />
@@ -279,7 +365,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: { borderRadius: radius.lg },
   cell: { position: 'absolute', borderWidth: 1 },
+  a11yCell: { position: 'absolute' },
   wall: { position: 'absolute' },
+  ring: { position: 'absolute', borderWidth: 3 },
   pip: {
     position: 'absolute',
     textAlign: 'center',

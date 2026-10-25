@@ -12,7 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Dominosa',
   slug: 'dominosa',
-  version: '0.2.0',
+  version: '0.3.2',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'dominosa',
@@ -38,7 +38,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     themeColor: BACKGROUND,
   },
   plugins: [
-    'expo-router',
+    // Async routes became the web default in SDK 58; one bundle keeps the offline PWA and the
+    // first paint as they were.
+    ['expo-router', { asyncRoutes: { web: false } }],
     'expo-localization',
     [
       'expo-splash-screen',

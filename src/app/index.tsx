@@ -9,6 +9,7 @@ import { useHydrated } from '@/platform/use-hydrated';
 import { useProgressStore } from '@/state/progress-store';
 import { useSavedGamesStore } from '@/state/saved-games-store';
 import { AppText } from '@/ui/components/AppText';
+import { IconButton } from '@/ui/components/IconButton';
 import { Screen } from '@/ui/components/Screen';
 import { packSummary } from '@/ui/level-list/pack-summary';
 import { PackCard } from '@/ui/level-list/PackCard';
@@ -27,9 +28,16 @@ export default function HomeScreen() {
       </Head>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <AppText variant="title" accessibilityRole="header">
-            {t.appName}
-          </AppText>
+          <View style={styles.titleRow}>
+            <AppText variant="title" accessibilityRole="header" maxFontSizeMultiplier={1.3}>
+              {t.appName}
+            </AppText>
+            <IconButton
+              icon="settings-outline"
+              label={t.actions.settings}
+              onPress={() => router.push('/settings')}
+            />
+          </View>
           <AppText tone="secondary">{t.homeSubtitle}</AppText>
         </View>
         <View style={styles.list}>
@@ -54,6 +62,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   content: { paddingVertical: spacing.xl, gap: spacing.xl },
   header: { gap: spacing.sm },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   list: { gap: spacing.md },
   version: { textAlign: 'center' },
 });

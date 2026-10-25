@@ -1,16 +1,19 @@
-# Dominosa · prototipo (hito 1 en curso)
+# Dominosa · juego completo sin adornos (hito 1)
 
 Puzle lógico de dominó: une cada pareja de números adyacentes con una ficha, usando cada ficha del juego exactamente una vez. Todo nivel tiene **solución única**.
 
-Prototipo jugable en el navegador, instalable en el iPhone como app web, con el motor en TypeScript que se reutilizará en la app nativa. El hito 0 está cerrado; el hito 1 va por bloques (hechos: **bloque 1**, muros y guardado, y **bloque 2**, rastreador de pares y packs).
+Jugable en el navegador, instalable en el iPhone como app web, con el motor en TypeScript que se reutilizará en la app nativa. Hitos 0 y 1 cerrados: muros y guardado, rastreador de pares y packs, accesibilidad y ajustes.
 
 - **60 niveles en 5 packs de 12**, en rampa de tamaño y profundidad de deducción: Primeros pasos (4×5 y 5×6), Fácil (5×6 y 6×7), Medio (7×8), Difícil (8×9) y Experto (9×10). Todos abiertos. Inicio → pack (rejilla de niveles con resueltos y a medias) → partida; "Siguiente" sigue en el pack y salta al siguiente al terminarlo.
 - **Rastreador de pares** (botón "Pares"): panel con todas las fichas del juego en escalera; sin colocar, colocadas (salvia) o repetidas (terracota). Tocar un par cierra el panel y marca en el tablero sus huecos libres como fichas punteadas, con el recuento arriba; se quita con la ✕ o al colocar ese par. El panel flota sobre la parte baja de la pantalla, así que el tablero nunca encoge.
 - Deslizar de una celda a su vecina para colocar (ficha fantasma mientras arrastras; si vuelves atrás, se cancela), tocar para quitar, colocar encima de otra ficha la reemplaza.
 - **Muros** (marcar que dos celdas no pueden ir juntas): deslizar crea y tocar quita. El botón "Muro" funciona como la tecla de mayúsculas del iPhone: un toque vale para un muro (el modo se apaga al ponerlo), doble toque lo deja fijo (candado) hasta volver a tocarlo. Tocar un muro lo quita; su zona de toque es mucho mayor que la barra (hasta media celda si la celda está vacía, un cuarto si tiene ficha) y el muro se pone en terracota mientras el dedo está encima. Un muro impide colocar una ficha en ese hueco; poner un muro donde hay una ficha la quita.
 - Deshacer (hasta 500 pasos, muros incluidos), reiniciar con confirmación (borra fichas y muros), fichas repetidas en terracota con icono, verde salvia al resolver.
-- **Partidas guardadas:** cada nivel empezado se guarda en el dispositivo (fichas, muros, historial de deshacer y tiempo) y se retoma al volver, aunque se cierre la app. El reloj se para al salir del nivel o al pasar la app a segundo plano. En la rejilla del pack, los niveles a medias llevan un punto terracota.
-- Progreso y mejor tiempo guardados en el dispositivo. Modo oscuro cálido. ES / EN / FR según el idioma del sistema.
+- **Partidas guardadas:** cada nivel empezado se guarda en el dispositivo (fichas, muros, historial de deshacer y tiempo) y se retoma al volver, aunque se cierre la app. El reloj se para al salir del nivel, al abrir los ajustes o al pasar la app a segundo plano. En la rejilla del pack, los niveles a medias llevan un punto terracota.
+- **Ajustes** (engranaje en inicio y en la partida, guardados en el dispositivo): vibración (solo en la app nativa; en la web no aparece), mostrar el tiempo mientras juegas (apagado por defecto: modo zen; el tiempo se guarda igualmente), tema (sistema / claro / oscuro) e idioma (sistema / español / inglés / francés).
+- **Jugar con VoiceOver** (o TalkBack): con el lector de pantalla activo, cada celda es un botón; elegir una celda la selecciona y elegir una vecina coloca la ficha (o el muro, con Muro activo; si ya hay muro, lo quita). Elegir otra vez la seleccionada quita su ficha o la deselecciona. En la app nativa, cada celda tiene además acciones (deslizar arriba o abajo): unir con cada vecina, muro con cada vecina, quitar ficha. No hay opción en ajustes: el modo sigue al sistema y sin lector de pantalla el juego no cambia. Solo existe en la app nativa (Expo Go o la app instalada): un navegador no deja saber si hay un lector de pantalla activo, así que en la web el tablero se lee pero no se juega con VoiceOver.
+- **Accesibilidad:** cada celda dice fila, columna, número, su ficha y hacia dónde, si está repetida, sus muros y si está seleccionada. Tras cada jugada se avisa de lo que ha pasado (ficha colocada o repetida, muro puesto o quitado, resuelto con el tiempo). Los botones Muro y Pares y los pares del rastreador dicen su estado (también en la web). Los pares repetidos llevan "×2", no solo color. Respeta "Reducir movimiento" y aguanta el texto grande.
+- Progreso y mejor tiempo guardados en el dispositivo. Modo oscuro cálido.
 - La pantalla de inicio muestra la versión y el commit del build, para saber si la app ya se actualizó (la PWA coge la versión nueva al cerrarla y volver a abrirla).
 - Funciona sin conexión una vez abierta (service worker).
 
@@ -32,7 +35,7 @@ Los cambios van en una rama; `main` es siempre lo publicado.
 
 1. Sube la rama: `git push -u origin <rama>`.
 2. En GitHub: **Actions → Deploy → Run workflow**. Deja _Use workflow from_ en `main` y escribe la rama (o un commit o un tag) en **ref**. Pasa los checks y publica esa versión en la misma URL.
-3. En el iPhone, cierra la app y vuelve a abrirla para que coja la versión nueva. La pantalla de inicio muestra el commit y, si no es `main`, la rama (por ejemplo `Versión 0.2.0 · 1a2b3c4 · hito1-bloque1`).
+3. En el iPhone, cierra la app y vuelve a abrirla para que coja la versión nueva. La pantalla de inicio muestra el commit y, si no es `main`, la rama (por ejemplo `Versión 0.3.0 · 1a2b3c4 · hito1-bloque3`).
 4. Si convence, abre un pull request y fusiónalo: al llegar a `main` se publica `main` otra vez. Si no, lanza **Deploy** con `main` para volver a lo que había.
 
 GitHub Pages tiene un solo sitio por repo, así que mientras pruebas una rama es lo que ve cualquiera que abra la URL. El workflow **Deploy** tiene que estar ya en `main` para aparecer en Actions, y siempre se lanza desde `main` (el entorno `github-pages` solo acepta despliegues iniciados ahí; qué se publica lo decide **ref**).
@@ -43,11 +46,15 @@ GitHub Pages tiene un solo sitio por repo, así que mientras pruebas una rama es
 2. **Compartir → Añadir a pantalla de inicio**.
 3. Se abre a pantalla completa, como una app, y funciona sin conexión.
 
-Para probar la versión nativa sin compilar: `npm start` y escanea el QR con **Expo Go** (SDK 57), con el móvil y el ordenador en la misma red.
+Para probar la versión nativa sin compilar, con **Expo Go** (el de la App Store solo abre proyectos de la última SDK, ahora la 58):
+
+1. Crea una cuenta gratuita en expo.dev si no la tienes. En el iPhone, Expo Go exige iniciar sesión, con la misma cuenta en el móvil y en el ordenador.
+2. En el ordenador: `npx expo login` (una vez) y `npm start`.
+3. En Expo Go: toca el icono de la cuenta, arriba a la derecha, e inicia sesión. Escanea el QR con la cámara (o toca el servidor en la pestaña Home). El móvil y el ordenador tienen que estar en la misma red; si no se ven, `npm start -- --tunnel`.
 
 ## Desarrollo
 
-Requisitos: Node 20.19 o superior.
+Requisitos: Node 22.13 o superior (o 24.3+; las versiones impares no valen).
 
 ```sh
 npm install
@@ -60,6 +67,8 @@ npm run build:web    # export estático + PWA en dist/
 
 Para probar el build de producción con la ruta de GitHub Pages: `BASE_URL=/dominosa npm run build:web`.
 
+Para pruebas automáticas en el navegador, `EXPO_PUBLIC_TEST_HOOKS=1 npm run build:web` expone `window.__dominosaTest.setScreenReader(true)`, que fuerza el modo VoiceOver (el navegador no deja detectarlo). Sin esa variable el código ni siquiera entra en el build.
+
 ## Arquitectura
 
 ```
@@ -70,11 +79,14 @@ src/
   game/      Reglas de una partida: reducer puro (colocar, reemplazar, quitar,
              muros, deshacer por diffs, reiniciar), selectores, progreso y
              guardado/restauración validada de partidas.
-  state/     Stores de Zustand (partida actual, partidas guardadas y progreso persistidos).
-  platform/  Adaptadores: almacenamiento, vibración, service worker, hidratación web.
+  state/     Stores de Zustand (partida actual; partidas guardadas, progreso y
+             ajustes persistidos).
+  platform/  Adaptadores: almacenamiento, vibración, lector de pantalla (detección
+             y avisos), service worker, hidratación web.
   i18n/      Textos ES/EN/FR tipados.
-  ui/        Tema (paleta del plan), componentes, tablero y gestos.
-  app/       Rutas de Expo Router (inicio, /pack/[packId] y /play/[levelId]).
+  ui/        Tema (paleta del plan), componentes, tablero, gestos y accesibilidad
+             del tablero (descripciones, acciones y avisos por celda).
+  app/       Rutas de Expo Router (inicio, /pack/[packId], /play/[levelId] y /settings).
 scripts/     Pipeline de niveles (Node) y post-proceso PWA.
 ```
 
@@ -96,7 +108,8 @@ Reglas que el lint hace cumplir: `core/` no importa nada de fuera (ni `Math.rand
 - **Rastreador:** ¿ayuda o estorba? ¿Se entiende qué significa cada color?
 - **Tamaño máximo:** el 9×10 da celdas de ~34 pt en un iPhone de 390 pt de ancho. ¿Se juega bien o el límite debe ser 8×9? (Cambiarlo es una línea en `scripts/level-packs.ts`.)
 - **Curva:** ¿cada pack se siente un poco más difícil que el anterior?
+- **VoiceOver** (en Expo Go, con VoiceOver activo): ¿se resuelve un nivel solo eligiendo celdas? ¿Los avisos y las descripciones de celda se entienden y no se pisan?
 
-## Siguiente (hito 1)
+## Siguiente (hito 2)
 
-- Bloque 3: "tocar A y luego B" (VoiceOver), etiquetas de accesibilidad y ajustes mínimos.
+Identidad y pulido: icono, animaciones, sonido, tutorial y pistas básicas. Beta en TestFlight y prueba cerrada de Google Play en paralelo.
