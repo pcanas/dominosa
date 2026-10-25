@@ -1,6 +1,6 @@
 import type { CellIndex, Puzzle, TechniqueLevel } from '@/core';
 
-/** Difficulty label shown to the player. Order within the list is the difficulty ramp. */
+/** Steps of the difficulty ramp, in order. Packs follow it (the levels test checks this). */
 export const DIFFICULTIES = ['tutorial', 'easy', 'medium', 'hard', 'expert'] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 

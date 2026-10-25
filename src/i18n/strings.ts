@@ -1,5 +1,3 @@
-import type { Difficulty } from '@/levels';
-
 /** Every user-facing string. Spanish is the reference; other locales must match its shape. */
 const es = {
   appName: 'Dominosa',
@@ -7,8 +5,6 @@ const es = {
   version: (version: string, build: string) => `Versión ${version} · ${build}`,
   levelNumber: (n: number) => `Nivel ${n}`,
   gridSize: (cols: number, rows: number) => `${cols}×${rows}`,
-  bestTime: (time: string) => `Mejor: ${time}`,
-  inProgress: (placed: number, total: number) => `En curso · ${placed}/${total}`,
   packs: {
     intro: 'Primeros pasos',
     easy: 'Fácil',
@@ -23,13 +19,6 @@ const es = {
     placed: (placed: number, total: number) => `${placed} de ${total} colocados`,
     hint: 'Toca un par para ver dónde puede ir',
   },
-  difficulty: {
-    tutorial: 'Tutorial',
-    easy: 'Fácil',
-    medium: 'Medio',
-    hard: 'Difícil',
-    expert: 'Experto',
-  } satisfies Record<Difficulty, string>,
   status: {
     start: 'Desliza entre dos celdas para colocar una ficha. Toca una ficha o un muro para quitarlo',
     wallOnce: 'Desliza entre dos celdas que no pueden ir juntas. Doble toque en Muro para dejarlo fijo',
@@ -133,8 +122,6 @@ const en: Strings = {
   version: (version, build) => `Version ${version} · ${build}`,
   levelNumber: (n) => `Level ${n}`,
   gridSize: (cols, rows) => `${cols}×${rows}`,
-  bestTime: (time) => `Best: ${time}`,
-  inProgress: (placed, total) => `In progress · ${placed}/${total}`,
   packs: { intro: 'First steps', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' },
   packSolved: (solved, total) => `${solved} of ${total} solved`,
   packInProgress: (n) => `${n} in progress`,
@@ -143,7 +130,6 @@ const en: Strings = {
     placed: (placed, total) => `${placed} of ${total} placed`,
     hint: 'Tap a pair to see where it can go',
   },
-  difficulty: { tutorial: 'Tutorial', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' },
   status: {
     start: 'Swipe between two cells to place a domino. Tap a domino or a wall to remove it',
     wallOnce: 'Swipe between two cells that cannot pair up. Double-tap Wall to keep it on',
@@ -232,8 +218,6 @@ const fr: Strings = {
   version: (version, build) => `Version ${version} · ${build}`,
   levelNumber: (n) => `Niveau ${n}`,
   gridSize: (cols, rows) => `${cols}×${rows}`,
-  bestTime: (time) => `Record : ${time}`,
-  inProgress: (placed, total) => `En cours · ${placed}/${total}`,
   packs: { intro: 'Premiers pas', easy: 'Facile', medium: 'Moyen', hard: 'Difficile', expert: 'Expert' },
   packSolved: (solved, total) => `${solved} sur ${total} résolus`,
   packInProgress: (n) => `${n} en cours`,
@@ -242,7 +226,6 @@ const fr: Strings = {
     placed: (placed, total) => `${placed} sur ${total} posées`,
     hint: 'Touchez une paire pour voir où elle peut aller',
   },
-  difficulty: { tutorial: 'Tutoriel', easy: 'Facile', medium: 'Moyen', hard: 'Difficile', expert: 'Expert' },
   status: {
     start: 'Glissez entre deux cases pour poser un domino. Touchez un domino ou un mur pour l’enlever',
     wallOnce: 'Glissez entre deux cases qui ne vont pas ensemble. Double touche sur Mur pour le garder',

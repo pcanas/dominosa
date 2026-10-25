@@ -1,6 +1,6 @@
 import { dominoCount, dominoId } from './dominoes';
 import { areAdjacent } from './topology';
-import type { CellIndex, Pair, Pip, Puzzle, Solution } from './types';
+import type { CellIndex, Pip, Puzzle, Solution } from './types';
 
 /** Builds a puzzle, checking that its shape is consistent with its order. */
 export function createPuzzle(order: number, rows: number, cols: number, cells: readonly Pip[]): Puzzle {
@@ -17,25 +17,6 @@ export function createPuzzle(order: number, rows: number, cols: number, cells: r
     }
   }
   return { order, rows, cols, cells: [...cells] };
-}
-
-/** Converts a partner array into the list of pairs (each pair once, sorted by first cell). */
-export function solutionToPairs(solution: Solution): Pair[] {
-  const pairs: Pair[] = [];
-  solution.forEach((partner, cell) => {
-    if (cell < partner) pairs.push({ a: cell, b: partner });
-  });
-  return pairs;
-}
-
-/** Converts pairs into a partner array. */
-export function pairsToSolution(pairs: readonly Pair[], cellCount: number): CellIndex[] {
-  const partner = new Array<CellIndex>(cellCount).fill(-1);
-  for (const { a, b } of pairs) {
-    partner[a] = b;
-    partner[b] = a;
-  }
-  return partner;
 }
 
 export type SolutionCheck =
@@ -83,35 +64,46 @@ export function decodeCells(text: string): Pip[] {
 }
 
 /**
- * Encodes a solution as one direction letter per cell, pointing at its partner:
- * R (right), L (left), D (down), U (up).
+ * Encodes partners as one letter per cell pointing at its partner: R (right),
+ * L (left), D (down), U (up), or `.` for a free cell. Used by level solutions
+ * (never free) and saved boards.
  */
-export function encodeSolution(solution: Solution, cols: number): string {
-  return solution
-    .map((partner, cell) => {
-      switch (partner - cell) {
-        case 1:
-          return 'R';
-        case -1:
-          return 'L';
-        case cols:
-          return 'D';
-        case -cols:
-          return 'U';
-        default:
-          throw new RangeError(`Cell ${cell} is not paired with a neighbour`);
-      }
+export function encodePartners(partner: readonly CellIndex[], cols: number): string {
+  return partner
+    .map((p, cell) => {
+      if (p === -1) return '.';
+      if (!areAdjacent(cell, p, cols)) throw new RangeError(`Cells ${cell} and ${p} are not adjacent`);
+      if (p === cell + 1) return 'R';
+      if (p === cell - 1) return 'L';
+      return p > cell ? 'D' : 'U';
     })
     .join('');
 }
 
-export function decodeSolution(text: string, cols: number): CellIndex[] {
+/**
+ * Partner array for encoded partners, without checking it: `.` is -1 and an
+ * unknown letter is NaN. Callers validate the result their own way.
+ */
+export function decodePartners(text: string, cols: number): number[] {
   const offsets: Record<string, number> = { R: 1, L: -1, D: cols, U: -cols };
-  const partner = Array.from(text, (ch, cell) => {
+  return Array.from(text, (ch, cell) => {
+    if (ch === '.') return -1;
     const offset = offsets[ch];
-    if (offset === undefined) throw new SyntaxError(`Invalid direction "${ch}"`);
-    return cell + offset;
+    return offset === undefined ? Number.NaN : cell + offset;
   });
+}
+
+/** Encodes a complete solution (every cell paired with a neighbour). */
+export function encodeSolution(solution: Solution, cols: number): string {
+  const free = solution.indexOf(-1);
+  if (free >= 0) throw new RangeError(`Cell ${free} is not paired`);
+  return encodePartners(solution, cols);
+}
+
+export function decodeSolution(text: string, cols: number): CellIndex[] {
+  const invalid = Array.from(text).find((ch) => !'RLDU'.includes(ch));
+  if (invalid !== undefined) throw new SyntaxError(`Invalid direction "${invalid}"`);
+  const partner = decodePartners(text, cols);
   partner.forEach((p, cell) => {
     if (partner[p] !== cell || !areAdjacent(cell, p, cols)) {
       throw new SyntaxError(`Inconsistent solution at cell ${cell}`);

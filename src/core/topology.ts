@@ -89,6 +89,25 @@ export function areAdjacent(a: CellIndex, b: CellIndex, cols: number): boolean {
   return (hi === lo + 1 && lo % cols !== cols - 1) || hi === lo + cols;
 }
 
+export type Direction = 'up' | 'down' | 'left' | 'right';
+export const DIRECTIONS: readonly Direction[] = ['up', 'down', 'left', 'right'];
+
+/** The cell next to `cell` in a direction, or -1 at the edge of the board. */
+export function neighbourOf(cell: CellIndex, dir: Direction, rows: number, cols: number): CellIndex {
+  const row = Math.floor(cell / cols);
+  const col = cell % cols;
+  switch (dir) {
+    case 'up':
+      return row > 0 ? cell - cols : -1;
+    case 'down':
+      return row < rows - 1 ? cell + cols : -1;
+    case 'left':
+      return col > 0 ? cell - 1 : -1;
+    case 'right':
+      return col < cols - 1 ? cell + 1 : -1;
+  }
+}
+
 /** Normalised pair (a < b). */
 export function makePair(x: CellIndex, y: CellIndex): Pair {
   return x < y ? { a: x, b: y } : { a: y, b: x };

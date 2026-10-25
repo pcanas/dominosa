@@ -23,7 +23,7 @@ export interface PackSpec {
    * new pack instead.
    */
   readonly id: string;
-  /** Label shown on every level of the pack. */
+  /** Step on the difficulty ramp; every level of the pack carries it. */
   readonly difficulty: Difficulty;
   /** Output path, relative to the repo root. */
   readonly output: string;

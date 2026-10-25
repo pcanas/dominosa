@@ -12,7 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Dominosa',
   slug: 'dominosa',
-  version: '0.3.2',
+  version: '0.3.3',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'dominosa',

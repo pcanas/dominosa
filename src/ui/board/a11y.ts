@@ -3,29 +3,10 @@
  * actions VoiceOver offers on a cell, and the message after each move.
  * Pure (strings come in as an argument), so it is tested without a device.
  */
-import { dominoId, dominoPips, type CellIndex } from '@/core';
+import { DIRECTIONS, dominoId, dominoPips, neighbourOf, type CellIndex, type Direction } from '@/core';
 import { hasWall, placedTiles, type GameAction, type GameState } from '@/game';
 import type { Strings } from '@/i18n';
 import type { DispatchOutcome } from '@/state/session-store';
-
-export type Direction = 'up' | 'down' | 'left' | 'right';
-export const DIRECTIONS: readonly Direction[] = ['up', 'down', 'left', 'right'];
-
-/** The cell next to `cell` in a direction, or -1 at the edge of the board. */
-export function neighbourOf(cell: CellIndex, dir: Direction, rows: number, cols: number): CellIndex {
-  const row = Math.floor(cell / cols);
-  const col = cell % cols;
-  switch (dir) {
-    case 'up':
-      return row > 0 ? cell - cols : -1;
-    case 'down':
-      return row < rows - 1 ? cell + cols : -1;
-    case 'left':
-      return col > 0 ? cell - 1 : -1;
-    case 'right':
-      return col < cols - 1 ? cell + 1 : -1;
-  }
-}
 
 function directionTo(from: CellIndex, to: CellIndex, cols: number): Direction {
   if (to === from - cols) return 'up';
