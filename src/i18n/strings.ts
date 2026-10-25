@@ -34,6 +34,11 @@ const es = {
     start: 'Desliza entre dos celdas para colocar una ficha. Toca una ficha o un muro para quitarlo',
     wallOnce: 'Desliza entre dos celdas que no pueden ir juntas. Doble toque en Muro para dejarlo fijo',
     wallLocked: 'Muro fijo: cada deslizamiento marca un muro. Toca Muro para salir',
+    /** With a screen reader, cells are picked one by one instead of swiped. */
+    startPick:
+      'Elige una celda y luego una vecina para colocar una ficha. Elige dos veces una ficha para quitarla',
+    wallPick:
+      'Muro: elige dos celdas vecinas que no pueden ir juntas, o dos con muro entre ellas para quitarlo',
     progress: (placed: number, total: number) => `${placed} de ${total} fichas`,
     duplicates: 'Hay fichas repetidas',
     fullWithDuplicates: 'Tablero completo, pero hay fichas repetidas',
@@ -67,7 +72,6 @@ const es = {
     languageSystem: 'Sistema',
   },
   a11y: {
-    board: 'Tablero',
     cell: (row: number, col: number, pip: number) => `Fila ${row}, columna ${col}: ${pip}`,
     solvedLevel: 'Resuelto',
     inProgressLevel: 'En curso',
@@ -144,6 +148,9 @@ const en: Strings = {
     start: 'Swipe between two cells to place a domino. Tap a domino or a wall to remove it',
     wallOnce: 'Swipe between two cells that cannot pair up. Double-tap Wall to keep it on',
     wallLocked: 'Wall locked: every swipe draws a wall. Tap Wall to leave',
+    startPick: 'Pick a cell, then a neighbour, to place a domino. Pick a domino twice to remove it',
+    wallPick:
+      'Wall: pick two neighbouring cells that cannot pair up, or two with a wall between them to remove it',
     progress: (placed, total) => `${placed} of ${total} dominoes`,
     duplicates: 'Some dominoes are repeated',
     fullWithDuplicates: 'Board full, but some dominoes are repeated',
@@ -176,7 +183,6 @@ const en: Strings = {
     languageSystem: 'System',
   },
   a11y: {
-    board: 'Board',
     cell: (row, col, pip) => `Row ${row}, column ${col}: ${pip}`,
     solvedLevel: 'Solved',
     inProgressLevel: 'In progress',
@@ -241,6 +247,10 @@ const fr: Strings = {
     start: 'Glissez entre deux cases pour poser un domino. Touchez un domino ou un mur pour l’enlever',
     wallOnce: 'Glissez entre deux cases qui ne vont pas ensemble. Double touche sur Mur pour le garder',
     wallLocked: 'Mur verrouillé : chaque glissement trace un mur. Touchez Mur pour sortir',
+    startPick:
+      'Choisissez une case puis une voisine pour poser un domino. Choisissez deux fois un domino pour l’enlever',
+    wallPick:
+      'Mur : choisissez deux cases voisines qui ne vont pas ensemble, ou deux séparées par un mur pour l’enlever',
     progress: (placed, total) => `${placed} sur ${total} dominos`,
     duplicates: 'Certains dominos sont répétés',
     fullWithDuplicates: 'Grille pleine, mais certains dominos sont répétés',
@@ -273,7 +283,6 @@ const fr: Strings = {
     languageSystem: 'Système',
   },
   a11y: {
-    board: 'Grille',
     cell: (row, col, pip) => `Ligne ${row}, colonne ${col} : ${pip}`,
     solvedLevel: 'Résolu',
     inProgressLevel: 'En cours',

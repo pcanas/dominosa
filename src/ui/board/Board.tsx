@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -11,7 +12,6 @@ import { GestureDetector } from 'react-native-gesture-handler';
 
 import { makePair, type CellIndex, type Pair, type Puzzle } from '@/core';
 import type { GameAction, PairSlots, PlacedTile } from '@/game';
-import { useStrings } from '@/i18n';
 import { fonts, radius, useTheme } from '@/ui/theme';
 
 import {
@@ -62,7 +62,8 @@ export interface ScreenReaderBoard {
 
 /**
  * The playing board. Fills the space it is given and sizes cells to fit.
- * Layers, bottom to top: frame → cells → dominoes → walls → drag previews → numbers.
+ * Layers, bottom to top: frame → cells → dominoes → walls → drag previews → numbers → the
+ * transparent cells screen readers use.
  */
 export function Board({
   puzzle,
@@ -79,7 +80,6 @@ export function Board({
   screenReader = null,
 }: BoardProps) {
   const { palette } = useTheme();
-  const t = useStrings();
   const [space, setSpace] = useState<{ width: number; height: number } | null>(null);
 
   const metrics = space ? computeMetrics(puzzle.rows, puzzle.cols, space.width, space.height, METRICS) : null;
@@ -111,7 +111,6 @@ export function Board({
       {metrics && metrics.cell > 0 && (
         <GestureDetector gesture={gesture} touchAction="none" userSelect="none">
           <View
-            accessibilityLabel={t.a11y.board}
             style={[
               styles.frame,
               { width: metrics.width, height: metrics.height, backgroundColor: palette.board },
@@ -133,30 +132,7 @@ export function Board({
                   borderColor: isStart ? palette.tileBorder : 'transparent',
                 },
               ];
-              if (!screenReader) {
-                return (
-                  <View key={`cell-${i}`} accessible accessibilityLabel={descriptions[i]} style={style} />
-                );
-              }
-              const actions = screenReader.actionsFor(i);
-              const selected = screenReader.selected === i;
-              return (
-                <Pressable
-                  key={`cell-${i}`}
-                  onPress={() => screenReader.onPick(i)}
-                  disabled={solved}
-                  accessibilityRole="button"
-                  accessibilityLabel={descriptions[i]}
-                  accessibilityState={{ selected, disabled: solved }}
-                  aria-selected={selected}
-                  accessibilityActions={actions.map(({ name, label }) => ({ name, label }))}
-                  onAccessibilityAction={(e: AccessibilityActionEvent) => {
-                    const picked = actions.find((a) => a.name === e.nativeEvent.actionName);
-                    if (picked) screenReader.onAction(picked.action);
-                  }}
-                  style={style}
-                />
-              );
+              return <View key={`cell-${i}`} style={style} />;
             })}
 
             {!solved &&
@@ -249,6 +225,46 @@ export function Board({
                 );
               })}
             </View>
+
+            {/*
+              What screen readers see and touch: one transparent element per cell, drawn last so no
+              layer sits above it (VoiceOver's touch exploration did not reach cells under the numbers).
+            */}
+            {puzzle.cells.map((_pip, i) => {
+              const r = cellRect(metrics, i);
+              const rect = { left: r.x, top: r.y, width: r.width, height: r.height };
+              if (!screenReader) {
+                return (
+                  <View
+                    key={`a11y-${i}`}
+                    accessible
+                    accessibilityLabel={descriptions[i]}
+                    // Safari only reads a label on an element with a role.
+                    role={Platform.OS === 'web' ? 'img' : undefined}
+                    style={[styles.a11yCell, rect]}
+                  />
+                );
+              }
+              const actions = screenReader.actionsFor(i);
+              const selected = screenReader.selected === i;
+              return (
+                <Pressable
+                  key={`a11y-${i}`}
+                  onPress={() => screenReader.onPick(i)}
+                  disabled={solved}
+                  accessibilityRole="button"
+                  accessibilityLabel={descriptions[i]}
+                  accessibilityState={{ selected, disabled: solved }}
+                  aria-selected={selected}
+                  accessibilityActions={actions.map(({ name, label }) => ({ name, label }))}
+                  onAccessibilityAction={(e: AccessibilityActionEvent) => {
+                    const picked = actions.find((a) => a.name === e.nativeEvent.actionName);
+                    if (picked) screenReader.onAction(picked.action);
+                  }}
+                  style={[styles.a11yCell, rect]}
+                />
+              );
+            })}
           </View>
         </GestureDetector>
       )}
@@ -349,6 +365,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: { borderRadius: radius.lg },
   cell: { position: 'absolute', borderWidth: 1 },
+  a11yCell: { position: 'absolute' },
   wall: { position: 'absolute' },
   ring: { position: 'absolute', borderWidth: 3 },
   pip: {

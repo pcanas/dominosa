@@ -246,6 +246,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
       <StatusLine
         status={status}
         wallMode={wallButton.mode}
+        pickMode={screenReaderOn}
         pair={
           highlight && selectedPair !== null
             ? { label: pairLabel(selectedPair, order), slots: highlight }
@@ -395,6 +396,7 @@ interface SelectedPair {
 function StatusLine({
   status,
   wallMode,
+  pickMode,
   pair,
   onClearPair,
   solvedInMs,
@@ -402,13 +404,15 @@ function StatusLine({
 }: {
   readonly status: BoardStatus;
   readonly wallMode: WallMode;
+  /** Playing with a screen reader: cells are picked, not swiped. */
+  readonly pickMode: boolean;
   readonly pair: SelectedPair | null;
   readonly onClearPair: () => void;
   readonly solvedInMs: number | null;
   readonly t: Strings;
 }) {
   const { palette } = useTheme();
-  const { text, tone, icon } = describeStatus(status, wallMode, pair, solvedInMs, t);
+  const { text, tone, icon } = describeStatus(status, wallMode, pickMode, pair, solvedInMs, t);
   const showClear = pair !== null && status.kind !== 'solved';
   return (
     // Not a live region: moves are announced by the play screen, without repeating this line.
@@ -445,6 +449,7 @@ function StatusLine({
 function describeStatus(
   status: BoardStatus,
   wallMode: WallMode,
+  pickMode: boolean,
   pair: SelectedPair | null,
   solvedInMs: number | null,
   t: Strings,
@@ -463,13 +468,15 @@ function describeStatus(
   }
   // Wall mode is worth a reminder, but never hides a warning or the solve.
   if (wallMode !== 'off' && (status.kind === 'empty' || status.kind === 'progress')) {
+    const icon = wallMode === 'locked' ? 'lock-closed-outline' : 'ban-outline';
+    if (pickMode) return { text: t.status.wallPick, tone: 'secondary', icon };
     return wallMode === 'locked'
-      ? { text: t.status.wallLocked, tone: 'secondary', icon: 'lock-closed-outline' }
-      : { text: t.status.wallOnce, tone: 'secondary', icon: 'ban-outline' };
+      ? { text: t.status.wallLocked, tone: 'secondary', icon }
+      : { text: t.status.wallOnce, tone: 'secondary', icon };
   }
   switch (status.kind) {
     case 'empty':
-      return { text: t.status.start, tone: 'secondary', icon: null };
+      return { text: pickMode ? t.status.startPick : t.status.start, tone: 'secondary', icon: null };
     case 'progress':
       return { text: t.status.progress(status.placed, status.total), tone: 'secondary', icon: null };
     case 'duplicates':
