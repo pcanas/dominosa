@@ -88,14 +88,28 @@ export function describeStatus(
 export interface SolveSummary {
   /** "Solved in 1:23!" */
   readonly title: string;
-  /** How it compares with the best time so far; null on a first solve. */
+  /**
+   * How it compares with the best time so far (nothing on a first solve), and
+   * "No hints" when none were used; null when there is nothing to add.
+   */
   readonly detail: string | null;
   readonly newBest: boolean;
+  /** Solved without hints. */
+  readonly perfect: boolean;
 }
 
-export function describeSolve(solvedInMs: number, bestBeforeMs: number | null, t: Strings): SolveSummary {
+export function describeSolve(
+  solvedInMs: number,
+  bestBeforeMs: number | null,
+  hintsUsed: number,
+  t: Strings,
+): SolveSummary {
   const title = t.status.solved(formatDuration(solvedInMs));
-  if (bestBeforeMs === null) return { title, detail: null, newBest: false };
-  if (solvedInMs < bestBeforeMs) return { title, detail: t.solved.newBest, newBest: true };
-  return { title, detail: t.solved.best(formatDuration(bestBeforeMs)), newBest: false };
+  const newBest = bestBeforeMs !== null && solvedInMs < bestBeforeMs;
+  const perfect = hintsUsed === 0;
+  const parts = [
+    bestBeforeMs === null ? null : newBest ? t.solved.newBest : t.solved.best(formatDuration(bestBeforeMs)),
+    perfect ? t.solved.perfect : null,
+  ].filter((part) => part !== null);
+  return { title, detail: parts.length > 0 ? parts.join(' · ') : null, newBest, perfect };
 }

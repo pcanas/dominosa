@@ -15,8 +15,8 @@ interface SolvedCardProps {
 }
 
 /**
- * Takes the status line's place once the board is solved: the time, and how it
- * compares with the best one. Same height as the status line, so the board
+ * Takes the status line's place once the board is solved: the time, how it
+ * compares with the best one, and whether it took no hints. Same height as the status line, so the board
  * does not move. Spoken by the play screen's announcement, not as a live region.
  */
 export function SolvedCard({ summary, delay }: SolvedCardProps) {
@@ -37,7 +37,7 @@ export function SolvedCard({ summary, delay }: SolvedCardProps) {
         entering={appear}
         style={[styles.card, { backgroundColor: palette.successSoft, borderColor: palette.success }]}>
         <Ionicons
-          name={summary.newBest ? 'trophy' : 'checkmark-circle'}
+          name={summary.newBest ? 'trophy' : summary.perfect ? 'star' : 'checkmark-circle'}
           size={22}
           color={palette.success}
           aria-hidden

@@ -60,6 +60,7 @@ function PackScreen({ pack }: { readonly pack: LevelPack }) {
                 key={level.id}
                 level={level}
                 solved={hydrated && progress[level.id] !== undefined}
+                perfect={hydrated && progress[level.id]?.perfect === true}
                 inProgress={hydrated && savedGames[level.id] !== undefined}
                 onPress={() => router.push({ pathname: '/play/[levelId]', params: { levelId: level.id } })}
               />

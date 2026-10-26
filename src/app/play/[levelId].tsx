@@ -196,7 +196,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
     if (soundOn) SOUNDS[outcome]?.();
     const after = useSessionStore.getState();
     if (after.game) {
-      const summary = describeSolve(after.solvedInMs ?? 0, after.bestBeforeMs, t);
+      const summary = describeSolve(after.solvedInMs ?? 0, after.bestBeforeMs, after.hintsUsed, t);
       const solvedText = summary.detail ? `${summary.title} ${summary.detail}` : summary.title;
       const message = announcementFor(action, outcome, after.game, t, solvedText);
       if (message) say(message);
@@ -312,7 +312,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
 
       {solved && session?.solvedInMs != null ? (
         <SolvedCard
-          summary={describeSolve(session.solvedInMs, session.bestBeforeMs, t)}
+          summary={describeSolve(session.solvedInMs, session.bestBeforeMs, session.hintsUsed, t)}
           // Shows up as the solve wave settles.
           delay={
             celebrateFrom === null ? 0 : waveEnd(tiles, celebrateFrom, level.puzzle.cols) - WAVE_TURN_MS / 2

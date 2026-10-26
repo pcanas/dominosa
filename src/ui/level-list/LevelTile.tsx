@@ -11,19 +11,21 @@ import { DepthDots } from './DepthDots';
 interface LevelTileProps {
   readonly level: Level;
   readonly solved: boolean;
+  /** Solved at least once without hints: a star instead of a tick. */
+  readonly perfect: boolean;
   readonly inProgress: boolean;
   readonly onPress: () => void;
 }
 
-/** One level in a pack's grid: number, size, depth, and whether it is solved or started. */
-export function LevelTile({ level, solved, inProgress, onPress }: LevelTileProps) {
+/** One level in a pack's grid: number, size, depth, and whether it is solved (perfectly) or started. */
+export function LevelTile({ level, solved, perfect, inProgress, onPress }: LevelTileProps) {
   const { palette } = useTheme();
   const t = useStrings();
   const { cols, rows } = level.puzzle;
   const label = [
     t.levelNumber(level.number),
     t.gridSize(cols, rows),
-    solved && t.a11y.solvedLevel,
+    solved && (perfect ? t.a11y.perfectLevel : t.a11y.solvedLevel),
     inProgress && t.a11y.inProgressLevel,
   ]
     .filter(Boolean)
@@ -51,7 +53,7 @@ export function LevelTile({ level, solved, inProgress, onPress }: LevelTileProps
       {(solved || inProgress) && (
         <View style={styles.corner}>
           {solved ? (
-            <Ionicons name="checkmark-circle" size={18} color={palette.success} />
+            <Ionicons name={perfect ? 'star' : 'checkmark-circle'} size={18} color={palette.success} />
           ) : (
             <View style={[styles.dot, { backgroundColor: palette.accent }]} />
           )}
