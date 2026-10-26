@@ -81,3 +81,22 @@ export const PACKS: readonly PackSpec[] = [
     groups: [{ order: 8, grade: 3, count: 12, pick: 'hardest' }],
   },
 ];
+
+/**
+ * The guided tutorial's board (see `src/game/tutorial.ts`): the smallest set
+ * (order 2, a 3×4 board, six dominoes), solvable with singles only, and the
+ * first seed whose board the tutorial script works on.
+ */
+export const TUTORIAL = {
+  id: 'tutorial',
+  difficulty: 'tutorial',
+  output: 'src/levels/tutorial.json',
+  order: 2,
+  grade: 1,
+} as const satisfies {
+  id: string;
+  difficulty: Difficulty;
+  output: string;
+  order: number;
+  grade: TechniqueLevel;
+};

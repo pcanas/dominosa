@@ -4,6 +4,7 @@ import hard from './packs/hard.json';
 import intro from './packs/intro.json';
 import medium from './packs/medium.json';
 import { parsePack } from './parse';
+import tutorial from './tutorial.json';
 import type { Difficulty, Level, LevelPackFile } from './types';
 
 export * from './types';
@@ -46,3 +47,6 @@ export function nextLevel(id: string): Level | undefined {
   const index = LEVELS.findIndex((level) => level.id === id);
   return index >= 0 ? LEVELS[index + 1] : undefined;
 }
+
+/** The guided tutorial's board (not part of any pack; see `src/game/tutorial.ts`). */
+export const TUTORIAL_LEVEL: Level = parsePack(tutorial as LevelPackFile)[0]!;
