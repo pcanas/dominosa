@@ -57,6 +57,36 @@ describe('describeHint', () => {
     expect(view.marks).toMatchObject({ cells: [0], place: { a: 0, b: 2 }, walls: [] });
   });
 
+  it('says why a free neighbour is ruled out: a domino already placed, or a wall', () => {
+    const single = step({ technique: 'cell-single', focus: [0], place: { a: 0, b: 2 } });
+    // The 0–1 is down at the bottom: the 1 next to this 0 would make it again.
+    const used = play({ type: 'place', a: 4, b: 5 });
+    expect(describeHint(single, 2, used, t, visual).text).toBe(
+      'Este 0 solo puede ir con el 0: con el 1 sería la ficha 0–1, que ya está puesta',
+    );
+    expect(describeHint(single, 2, used, t, visual).spoken).toBe(
+      t.hint.cellSingleBecause(0, 0, [t.hint.becauseUsed([{ neighbour: 1, pair: t.a11y.pairSpoken(0, 1) }])]),
+    );
+    const walled = play({ type: 'addWall', a: 0, b: 1 });
+    expect(describeHint(single, 2, walled, t, visual).text).toBe(
+      'Este 0 solo puede ir con el 0: un muro lo separa del 1',
+    );
+  });
+
+  it('puts several reasons in one sentence', () => {
+    const used = [
+      { neighbour: 3, pair: '1–3' },
+      { neighbour: 2, pair: '1–2' },
+    ] as const;
+    expect(t.hint.cellSingleBecause(1, 1, [t.hint.becauseUsed(used), t.hint.becauseWalls([0, 4])])).toBe(
+      'Este 1 solo puede ir con el 1: con el 3 sería la ficha 1–3 y con el 2 la 1–2, que ya están puestas y unos muros lo separan del 0 y del 4',
+    );
+    expect(STRINGS.en.hint.becauseUsed(used)).toBe(
+      'with the 3 it would be the 1–3 and with the 2 the 1–2, which are already placed',
+    );
+    expect(STRINGS.fr.hint.becauseWalls([0])).toBe('un mur le sépare du 0');
+  });
+
   it('has a sentence for every technique', () => {
     const walls = [{ a: 0, b: 1 }];
     const d01 = dominoId(0, 1, 1);

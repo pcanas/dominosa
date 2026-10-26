@@ -7,9 +7,9 @@
  *
  * Pure (strings come in as an argument), so it is tested without a device.
  */
-import { dominoPips, type CellIndex, type DominoId, type Pair } from '@/core';
-import { hintFocus, type GameState, type Hint } from '@/game';
-import type { Strings } from '@/i18n/strings';
+import { dominoId, dominoPips, getTopology, type CellIndex, type DominoId, type Pair } from '@/core';
+import { hasWall, hintFocus, placedTiles, type GameState, type Hint } from '@/game';
+import type { Strings, UsedNeighbour } from '@/i18n/strings';
 import { NO_HINT_MARKS, type HintMarks } from '@/ui/board/hint-marks';
 
 export type HintStage = 1 | 2;
@@ -95,7 +95,10 @@ export function describeHint(
           case 'cell-single': {
             const cell = step.focus[0]!;
             const other = partnerIn(step.place!, cell);
-            return t.hint.cellSingle(cells[cell]!, cells[other]!);
+            const reasons = ruledOut(game, cell, other, pair, t);
+            return reasons.length === 0
+              ? t.hint.cellSingle(cells[cell]!, cells[other]!)
+              : t.hint.cellSingleBecause(cells[cell]!, cells[other]!, reasons);
           }
           case 'domino-single':
             return t.hint.dominoSingle(pair(step.domino));
@@ -116,6 +119,38 @@ export function describeHint(
 
 function partnerIn(pair: Pair, cell: CellIndex): CellIndex {
   return pair.a === cell ? pair.b : pair.a;
+}
+
+/**
+ * Why a cell's other free neighbours cannot be its partner: a wall, or a domino
+ * that is already on the board. Covered neighbours go without saying.
+ */
+function ruledOut(
+  game: GameState,
+  cell: CellIndex,
+  partner: CellIndex,
+  pair: (domino: DominoId) => string,
+  t: Strings,
+): string[] {
+  const { cells, order, rows, cols } = game.puzzle;
+  const { cellEdges, edgeA, edgeB } = getTopology(rows, cols);
+  const placed = new Set(placedTiles(game).map((tile) => tile.domino));
+  // By number: two neighbours with the same number are ruled out for the same reason.
+  const used = new Map<number, UsedNeighbour>();
+  const walled = new Set<number>();
+  for (const edge of cellEdges[cell]!) {
+    const neighbour = edgeA[edge] === cell ? edgeB[edge]! : edgeA[edge]!;
+    if (neighbour === partner || game.partner[neighbour]! >= 0) continue;
+    const value = cells[neighbour]!;
+    const domino = dominoId(cells[cell]!, value, order);
+    if (hasWall(game, cell, neighbour)) walled.add(value);
+    else if (placed.has(domino)) used.set(value, { neighbour: value, pair: pair(domino) });
+  }
+  const [first, ...rest] = used.values();
+  return [
+    ...(first ? [t.hint.becauseUsed([first, ...rest])] : []),
+    ...(walled.size > 0 ? [t.hint.becauseWalls([...walled])] : []),
+  ];
 }
 
 /** Identifies a hint, so the sheet only slides in again for a different one. */

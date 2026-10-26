@@ -1,3 +1,18 @@
+/** "a, b and c" with the language's own "and". */
+const listWith =
+  (and: string) =>
+  (items: readonly string[]): string =>
+    items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} ${and} ${items.at(-1)}`;
+const listEs = listWith('y');
+const listEn = listWith('and');
+const listFr = listWith('et');
+
+/** A free neighbour of a cell, and the domino it would make, which is already on the board. */
+export interface UsedNeighbour {
+  readonly neighbour: number;
+  readonly pair: string;
+}
+
 /** Every user-facing string. Spanish is the reference; other locales must match its shape. */
 const es = {
   appName: 'Dominosa',
@@ -69,6 +84,20 @@ const es = {
     reveal: (pair: string) => `Desde aquí no hay un paso sencillo: esta ficha ${pair} es de la solución`,
     cellSingle: (value: number, other: number) =>
       `Este ${value} solo puede ir con el ${other}: no le queda otra vecina libre`,
+    /** Some of its other neighbours are free, but ruled out (`becauseUsed`, `becauseWalls`). */
+    cellSingleBecause: (value: number, other: number, reasons: readonly string[]) =>
+      `Este ${value} solo puede ir con el ${other}: ${listEs(reasons)}`,
+    becauseUsed: ([first, ...rest]: readonly [UsedNeighbour, ...UsedNeighbour[]]) =>
+      rest.length === 0
+        ? `con el ${first.neighbour} sería la ficha ${first.pair}, que ya está puesta`
+        : `${listEs([
+            `con el ${first.neighbour} sería la ficha ${first.pair}`,
+            ...rest.map((u) => `con el ${u.neighbour} la ${u.pair}`),
+          ])}, que ya están puestas`,
+    becauseWalls: (neighbours: readonly number[]) =>
+      neighbours.length === 1
+        ? `un muro lo separa del ${neighbours[0]}`
+        : `unos muros lo separan ${listEs(neighbours.map((n) => `del ${n}`))}`,
     dominoSingle: (pair: string) => `La ficha ${pair} solo cabe aquí: es el último sitio que le queda`,
     sharedCell: (pair: string, value: number) =>
       `Todos los sitios que le quedan a la ficha ${pair} usan este ${value}, así que este ${value} no puede ir con nada más`,
@@ -251,6 +280,19 @@ const en: Strings = {
     reveal: (pair) => `There is no simple step from here: this ${pair} domino is part of the solution`,
     cellSingle: (value, other) =>
       `This ${value} can only go with the ${other}: it has no other free neighbour`,
+    cellSingleBecause: (value, other, reasons) =>
+      `This ${value} can only go with the ${other}: ${listEn(reasons)}`,
+    becauseUsed: ([first, ...rest]) =>
+      rest.length === 0
+        ? `with the ${first.neighbour} it would be the ${first.pair}, which is already placed`
+        : `${listEn([
+            `with the ${first.neighbour} it would be the ${first.pair}`,
+            ...rest.map((u) => `with the ${u.neighbour} the ${u.pair}`),
+          ])}, which are already placed`,
+    becauseWalls: (neighbours) =>
+      neighbours.length === 1
+        ? `a wall separates it from the ${neighbours[0]}`
+        : `walls separate it from ${listEn(neighbours.map((n) => `the ${n}`))}`,
     dominoSingle: (pair) => `The ${pair} only fits here: it is the last place left for it`,
     sharedCell: (pair, value) =>
       `Every place left for the ${pair} uses this ${value}, so this ${value} cannot pair with anything else`,
@@ -421,6 +463,19 @@ const fr: Strings = {
     reveal: (pair) => `Pas d’étape simple d’ici : ce domino ${pair} fait partie de la solution`,
     cellSingle: (value, other) =>
       `Ce ${value} ne peut aller qu’avec le ${other} : il n’a pas d’autre voisine libre`,
+    cellSingleBecause: (value, other, reasons) =>
+      `Ce ${value} ne peut aller qu’avec le ${other} : ${listFr(reasons)}`,
+    becauseUsed: ([first, ...rest]) =>
+      rest.length === 0
+        ? `avec le ${first.neighbour}, ce serait le ${first.pair}, déjà posé`
+        : `${listFr([
+            `avec le ${first.neighbour}, ce serait le ${first.pair}`,
+            ...rest.map((u) => `avec le ${u.neighbour} le ${u.pair}`),
+          ])}, déjà posés`,
+    becauseWalls: (neighbours) =>
+      neighbours.length === 1
+        ? `un mur le sépare du ${neighbours[0]}`
+        : `des murs le séparent ${listFr(neighbours.map((n) => `du ${n}`))}`,
     dominoSingle: (pair) => `Le ${pair} ne rentre qu’ici : c’est la dernière place qui lui reste`,
     sharedCell: (pair, value) =>
       `Toutes les places qui restent au ${pair} utilisent ce ${value}, donc ce ${value} ne peut aller avec rien d’autre`,
