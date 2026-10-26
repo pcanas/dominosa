@@ -4,11 +4,14 @@
  *   npm run icons
  *
  *  - iOS: `icon.png` (1024, no alpha), plus the dark and tinted variants iOS
- *    shows when the home screen uses them (`icon-dark.png`, `icon-tinted.png`).
- *  - Android: adaptive foreground and themed (monochrome) layers, with the
- *    domino inside the safe zone launchers never crop.
- *  - Splash screen, web favicon, PWA icons (incl. maskable) and the
- *    apple-touch-icon used when the web app is added to the home screen.
+ *    shows when the home screen uses them (`icon-dark.png`: the board at night;
+ *    `icon-tinted.png`: greys only, as iOS requires).
+ *  - Android: adaptive icon in two layers, the board behind (`background`) and
+ *    the domino in front (`foreground`), so launchers that move the layers apart
+ *    lift the domino off its slot; plus the themed (monochrome) layer. The domino
+ *    stays inside the safe zone launchers never crop.
+ *  - Splash screen, web favicon (the domino alone), PWA icons (incl. maskable)
+ *    and the apple-touch-icon used when the web app is added to the home screen.
  *  - `assets/brand/icon.svg`: the main icon as SVG, for reference.
  *
  * Deterministic: same art, same files.
@@ -18,7 +21,7 @@ import { dirname, resolve } from 'node:path';
 
 import { Resvg } from '@resvg/resvg-js';
 
-import { iconSvg, type IconOptions } from './icon-art';
+import { ADAPTIVE, iconSvg, MASKABLE, type IconOptions } from './icon-art';
 import { encodePng } from './png';
 
 const FONT = resolve('node_modules/@expo-google-fonts/nunito/800ExtraBold/Nunito_800ExtraBold.ttf');
@@ -31,39 +34,32 @@ interface Output {
   readonly opaque?: boolean;
 }
 
-/**
- * Android crops adaptive icons to the central 72 of 108 dp (a circle on many
- * launchers): at this scale the tilted domino and its shadow sit well inside it.
- */
-const ADAPTIVE = 0.6;
-/** Maskable PWA icons may be cropped to a circle of 80 % of the size. */
-const MASKABLE = 0.82;
-
 const OUTPUTS: readonly Output[] = [
-  { file: 'assets/images/icon.png', size: 1024, art: { background: 'light' }, opaque: true },
-  { file: 'assets/images/icon-dark.png', size: 1024, art: { background: 'none' } },
+  { file: 'assets/images/icon.png', size: 1024, art: { board: 'light' }, opaque: true },
+  { file: 'assets/images/icon-dark.png', size: 1024, art: { board: 'dark' }, opaque: true },
+  { file: 'assets/images/icon-tinted.png', size: 1024, art: { board: 'grey' }, opaque: true },
   {
-    file: 'assets/images/icon-tinted.png',
+    file: 'assets/images/android-icon-background.png',
     size: 1024,
-    art: { background: 'black', grey: true },
+    art: { board: 'light', piece: false, scale: ADAPTIVE },
     opaque: true,
   },
-  {
-    file: 'assets/images/android-icon-foreground.png',
-    size: 1024,
-    art: { background: 'none', scale: ADAPTIVE },
-  },
+  { file: 'assets/images/android-icon-foreground.png', size: 1024, art: { board: 'none', scale: ADAPTIVE } },
   {
     file: 'assets/images/android-icon-monochrome.png',
     size: 1024,
-    art: { background: 'none', scale: ADAPTIVE, silhouette: true },
+    art: { board: 'none', centered: true, scale: ADAPTIVE, silhouette: true },
   },
-  { file: 'assets/images/splash-icon.png', size: 512, art: { background: 'none', scale: 1.05 } },
-  { file: 'assets/images/favicon.png', size: 48, art: { background: 'none', scale: 1.1, shadow: false } },
-  { file: 'public/apple-touch-icon.png', size: 180, art: { background: 'light' }, opaque: true },
-  { file: 'public/icons/icon-192.png', size: 192, art: { background: 'light' } },
-  { file: 'public/icons/icon-512.png', size: 512, art: { background: 'light' } },
-  { file: 'public/icons/icon-maskable-512.png', size: 512, art: { background: 'light', scale: MASKABLE } },
+  { file: 'assets/images/splash-icon.png', size: 512, art: { board: 'none', centered: true, scale: 1.05 } },
+  {
+    file: 'assets/images/favicon.png',
+    size: 48,
+    art: { board: 'none', centered: true, scale: 1.1, shadow: false },
+  },
+  { file: 'public/apple-touch-icon.png', size: 180, art: { board: 'light' }, opaque: true },
+  { file: 'public/icons/icon-192.png', size: 192, art: { board: 'light' } },
+  { file: 'public/icons/icon-512.png', size: 512, art: { board: 'light' } },
+  { file: 'public/icons/icon-maskable-512.png', size: 512, art: { board: 'light', scale: MASKABLE } },
 ];
 
 function render(svg: string, size: number, opaque: boolean): Uint8Array {
@@ -85,5 +81,5 @@ for (const { file, size, art, opaque = false } of OUTPUTS) {
   write(file, render(iconSvg(art), size, opaque));
   console.log(`✓ ${file} (${size}×${size}${opaque ? ', no alpha' : ''})`);
 }
-write('assets/brand/icon.svg', `${iconSvg({ background: 'light' })}\n`);
+write('assets/brand/icon.svg', `${iconSvg({ board: 'light' })}\n`);
 console.log('✓ assets/brand/icon.svg');
