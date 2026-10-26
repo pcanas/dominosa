@@ -33,13 +33,14 @@ const INSET = 1;
 const SNAP = { damping: 13, stiffness: 260, mass: 0.6 } as const;
 
 /**
- * A domino taken off the board (removed, undone, replaced, reset) fades and
- * shrinks a little instead of vanishing. A keyframe, so it also runs on the web.
+ * A domino taken off the board (removed, undone, replaced, reset) fades out in
+ * place instead of vanishing; it keeps its size, so it does not look like it
+ * shrinks away. A keyframe, so it also runs on the web.
  */
 const LEAVE = new Keyframe({
-  0: { opacity: 1, transform: [{ scale: 1 }] },
-  100: { opacity: 0, transform: [{ scale: 0.9 }] },
-}).duration(170);
+  0: { opacity: 1 },
+  100: { opacity: 0 },
+}).duration(160);
 
 /**
  * A domino covering two cells. Numbers are drawn by the board on top of it.
@@ -96,51 +97,62 @@ export function Tile({ rect, variant, cell, celebrateDelay = 0 }: TileProps) {
   const badge = Math.max(14, Math.round(cell * 0.32));
 
   return (
+    // The outer view only places the domino and fades it out when it leaves; the scale lives on the
+    // inner one. On the web, Reanimated draws a leaving view at the size it measured when it appeared,
+    // so a view that appeared mid-snap would jump smaller just before fading.
     <Animated.View
       pointerEvents="none"
       aria-hidden
       exiting={preview ? undefined : LEAVE}
       style={[
-        styles.tile,
+        styles.slot,
         {
           left: rect.x + INSET,
           top: rect.y + INSET,
           width: rect.width - 2 * INSET,
           height: rect.height - 2 * INSET,
-          borderRadius: radius,
-          backgroundColor: colors.fill,
-          borderColor: colors.border,
-          borderStyle: preview ? 'dashed' : 'solid',
-          borderWidth: emphasis ? 2.5 : 1.5,
-          boxShadow: preview ? undefined : '0px 1px 2px rgba(74, 63, 53, 0.18)',
         },
-        animated,
       ]}>
       <Animated.View
         style={[
-          horizontal ? styles.dividerVertical : styles.dividerHorizontal,
-          { backgroundColor: colors.divider },
-          dividerAnimated,
-        ]}
-      />
-      {variant === 'duplicate' && (
-        <View
+          styles.tile,
+          {
+            borderRadius: radius,
+            backgroundColor: colors.fill,
+            borderColor: colors.border,
+            borderStyle: preview ? 'dashed' : 'solid',
+            borderWidth: emphasis ? 2.5 : 1.5,
+            boxShadow: preview ? undefined : '0px 1px 2px rgba(74, 63, 53, 0.18)',
+          },
+          animated,
+        ]}>
+        <Animated.View
           style={[
-            styles.badge,
-            { width: badge, height: badge, borderRadius: badge / 2, backgroundColor: palette.accent },
-          ]}>
-          <View style={[styles.badgeMark, { height: badge * 0.42, backgroundColor: palette.tile }]} />
-          <View style={[styles.badgeDot, { backgroundColor: palette.tile }]} />
-        </View>
-      )}
+            horizontal ? styles.dividerVertical : styles.dividerHorizontal,
+            { backgroundColor: colors.divider },
+            dividerAnimated,
+          ]}
+        />
+        {variant === 'duplicate' && (
+          <View
+            style={[
+              styles.badge,
+              { width: badge, height: badge, borderRadius: badge / 2, backgroundColor: palette.accent },
+            ]}>
+            <View style={[styles.badgeMark, { height: badge * 0.42, backgroundColor: palette.tile }]} />
+            <View style={[styles.badgeDot, { backgroundColor: palette.tile }]} />
+          </View>
+        )}
+      </Animated.View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  tile: {
+  slot: {
     position: 'absolute',
   },
+  tile: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
   dividerVertical: {
     position: 'absolute',
     left: '50%',

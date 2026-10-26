@@ -65,7 +65,8 @@ export interface ScreenReaderBoard {
 /**
  * The playing board. Fills the space it is given and sizes cells to fit.
  * Layers, bottom to top: frame → cells → dominoes → walls → drag previews → numbers → the
- * transparent cells screen readers use.
+ * transparent cells screen readers use. The last two also carry a z-index: on the web, a domino
+ * fading out is redrawn at the end of the board, and would otherwise cover the numbers.
  */
 export function Board({
   puzzle,
@@ -221,7 +222,7 @@ export function Board({
               ))}
 
           {/* Values are part of each cell's description, so the layer is hidden from screen readers. */}
-          <View pointerEvents="none" aria-hidden style={StyleSheet.absoluteFill}>
+          <View pointerEvents="none" aria-hidden style={styles.values}>
             {puzzle.cells.map((value, i) =>
               pips ? (
                 <PipFace
@@ -416,7 +417,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: { borderRadius: radius.lg },
   cell: { position: 'absolute', borderWidth: 1 },
-  target: { position: 'absolute' },
+  values: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 2 },
+  target: { position: 'absolute', zIndex: 3 },
   wall: { position: 'absolute' },
   ring: { position: 'absolute', borderWidth: 3 },
   pip: {
