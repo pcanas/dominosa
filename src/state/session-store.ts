@@ -31,6 +31,8 @@ interface SessionStore {
   readonly solvedInMs: number | null;
   /** Best time for this level before the solve that just happened (null on a first solve). */
   readonly bestBeforeMs: number | null;
+  /** Hints asked for in this attempt; a solve with none is perfect. */
+  readonly hintsUsed: number;
   /**
    * Opens a level: resumes it if it is the unsolved level already open,
    * otherwise restores its saved game or starts a new one. Starts the clock.
@@ -44,6 +46,8 @@ interface SessionStore {
   /** Pauses and saves; a solved level is discarded, so coming back starts a fresh board. */
   leave(levelId: string): void;
   dispatch(action: GameAction): DispatchOutcome;
+  /** Counts a hint asked for (and saves it with the game). Does nothing once the board is solved. */
+  recordHint(): void;
 }
 
 const EMPTY = {
@@ -53,6 +57,7 @@ const EMPTY = {
   runningSince: null,
   solvedInMs: null,
   bestBeforeMs: null,
+  hintsUsed: 0,
 } as const;
 
 /** Time played in the current attempt. */
@@ -67,11 +72,14 @@ export function elapsedNow(
 export const useSessionStore = create<SessionStore>()((set, get) => {
   /** Writes the current game to the saved games (or drops it when there is nothing worth keeping). */
   const persist = () => {
-    const { levelId, game } = get();
+    const { levelId, game, hintsUsed } = get();
     if (!levelId || !game) return;
     const saved = useSavedGamesStore.getState();
-    if (isSolved(game) || (isBlank(game) && game.past.length === 0)) saved.discard(levelId);
-    else saved.save(levelId, game, elapsedNow(get()));
+    if (isSolved(game) || (isBlank(game) && game.past.length === 0 && hintsUsed === 0)) {
+      saved.discard(levelId);
+    } else {
+      saved.save(levelId, game, elapsedNow(get()), hintsUsed);
+    }
   };
 
   return {
@@ -95,6 +103,7 @@ export const useSessionStore = create<SessionStore>()((set, get) => {
         runningSince: Date.now(),
         solvedInMs: null,
         bestBeforeMs: null,
+        hintsUsed: restored?.hints ?? 0,
       });
     },
 
@@ -131,25 +140,39 @@ export const useSessionStore = create<SessionStore>()((set, get) => {
         const progress = useProgressStore.getState();
         const bestBeforeMs = progress.levels[levelId]?.bestMs ?? null;
         set({ game: next, solvedInMs, bestBeforeMs, elapsedMs: solvedInMs, runningSince: null });
-        progress.recordSolve(levelId, solvedInMs);
+        progress.recordSolve(levelId, solvedInMs, get().hintsUsed);
         useSavedGamesStore.getState().discard(levelId);
         return 'solved';
       }
 
       if (action.type === 'reset' && isSolved(game)) {
-        // Replaying a solved board starts a new, timed attempt.
-        set({ game: next, elapsedMs: 0, runningSince: Date.now(), solvedInMs: null, bestBeforeMs: null });
+        // Replaying a solved board starts a new, timed attempt, with no hints used yet.
+        set({
+          game: next,
+          elapsedMs: 0,
+          runningSince: Date.now(),
+          solvedInMs: null,
+          bestBeforeMs: null,
+          hintsUsed: 0,
+        });
       } else {
         // Playing while paused (e.g. a missed "app active" event) restarts the clock.
         set(get().runningSince === null ? { game: next, runningSince: Date.now() } : { game: next });
       }
       persist();
 
-      if (action.type === 'addWall') return 'wallAdded';
+      if (action.type === 'addWall' || action.type === 'addWalls') return 'wallAdded';
       if (action.type === 'removeWall') return 'wallRemoved';
       return action.type === 'place' || coveredCellCount(next) > coveredCellCount(game)
         ? 'placed'
         : 'removed';
+    },
+
+    recordHint: () => {
+      const { game } = get();
+      if (!game || isSolved(game)) return;
+      set((state) => ({ hintsUsed: state.hintsUsed + 1 }));
+      persist();
     },
   };
 });

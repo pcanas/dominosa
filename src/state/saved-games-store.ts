@@ -19,7 +19,7 @@ interface SavedGamesStore {
    * saved before that, so an early write can never wipe what is on disk.
    */
   readonly ready: boolean;
-  save(levelId: string, game: GameState, elapsedMs: number): void;
+  save(levelId: string, game: GameState, elapsedMs: number, hints: number): void;
   discard(levelId: string): void;
 }
 
@@ -35,10 +35,10 @@ export const useSavedGamesStore = create<SavedGamesStore>()(
     (set, get) => ({
       games: {},
       ready: false,
-      save: (levelId, game, elapsedMs) => {
+      save: (levelId, game, elapsedMs, hints) => {
         if (!get().ready) return;
         set((state) => ({
-          games: withSavedGame(state.games, levelId, saveGame(game, elapsedMs, new Date())),
+          games: withSavedGame(state.games, levelId, saveGame(game, elapsedMs, new Date(), hints)),
         }));
       },
       discard: (levelId) => {

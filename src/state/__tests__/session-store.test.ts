@@ -41,6 +41,7 @@ function restartApp() {
     runningSince: null,
     solvedInMs: null,
     bestBeforeMs: null,
+    hintsUsed: 0,
   });
 }
 
@@ -86,6 +87,36 @@ describe('session store', () => {
     solveAll();
     expect(session()).toMatchObject({ solvedInMs: 30_000, bestBeforeMs: 42_000 });
     expect(useProgressStore.getState().levels[level.id]?.bestMs).toBe(30_000);
+  });
+
+  it('counts hints, saves them with the game and records whether a solve was perfect', () => {
+    session().open(level);
+    session().recordHint();
+    session().recordHint();
+    expect(session().hintsUsed).toBe(2);
+    // Saved even on an empty board, so leaving and coming back does not forget them.
+    expect(savedGame()?.hints).toBe(2);
+    restartApp();
+    session().open(level);
+    expect(session().hintsUsed).toBe(2);
+
+    solveAll();
+    expect(useProgressStore.getState().levels[level.id]?.perfect).toBe(false);
+    session().recordHint();
+    expect(session().hintsUsed).toBe(2);
+
+    // Replaying starts with no hints: a clean solve makes the level perfect.
+    session().dispatch({ type: 'reset' });
+    expect(session().hintsUsed).toBe(0);
+    solveAll();
+    expect(useProgressStore.getState().levels[level.id]).toMatchObject({ perfect: true, timesSolved: 2 });
+  });
+
+  it('reports walls drawn by a hint as one move', () => {
+    session().open(level);
+    const pairs = [{ a: 0, b: 1 }];
+    expect(session().dispatch({ type: 'addWalls', pairs })).toBe('wallAdded');
+    expect(session().game?.past).toHaveLength(1);
   });
 
   it('does not count paused time', () => {

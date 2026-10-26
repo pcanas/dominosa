@@ -1,6 +1,6 @@
 /**
- * Saving and restoring a game in progress: dominoes, walls, undo history and
- * time played. The stored shape is compact JSON; restoring validates all of it,
+ * Saving and restoring a game in progress: dominoes, walls, undo history, time
+ * played and hints used. The stored shape is compact JSON; restoring validates all of it,
  * because stored data may come from an older build or from a level whose
  * content has changed since.
  */
@@ -27,6 +27,8 @@ export interface SavedGame {
   readonly past: readonly Change[];
   /** Time played so far, in milliseconds. */
   readonly elapsedMs: number;
+  /** Hints asked for so far. Missing in games saved before hints existed (read as none). */
+  readonly hints?: number;
   /** ISO date of the last save. */
   readonly savedAt: string;
 }
@@ -36,7 +38,7 @@ export type SavedGames = Readonly<Record<string, SavedGame>>;
 /** Games in progress kept on the device; beyond this, the least recently played are dropped. */
 export const MAX_SAVED_GAMES = 30;
 
-export function saveGame(game: GameState, elapsedMs: number, now: Date): SavedGame {
+export function saveGame(game: GameState, elapsedMs: number, now: Date, hints = 0): SavedGame {
   const { puzzle } = game;
   const walls: number[] = [];
   game.walls.forEach((w, edge) => {
@@ -48,6 +50,7 @@ export function saveGame(game: GameState, elapsedMs: number, now: Date): SavedGa
     walls,
     past: game.past,
     elapsedMs: Math.max(0, Math.round(elapsedMs)),
+    hints: Math.max(0, Math.floor(hints)),
     savedAt: now.toISOString(),
   };
 }
@@ -60,7 +63,7 @@ export function saveGame(game: GameState, elapsedMs: number, now: Date): SavedGa
 export function restoreGame(
   puzzle: Puzzle,
   saved: unknown,
-): { readonly game: GameState; readonly elapsedMs: number } | null {
+): { readonly game: GameState; readonly elapsedMs: number; readonly hints: number } | null {
   if (!isRecord(saved) || saved.cells !== encodeCells(puzzle.cells)) return null;
   if (typeof saved.board !== 'string') return null;
 
@@ -84,7 +87,8 @@ export function restoreGame(
   const past = Array.isArray(saved.past) ? validHistory(game, saved.past) : [];
   const elapsed =
     typeof saved.elapsedMs === 'number' && Number.isFinite(saved.elapsedMs) ? saved.elapsedMs : 0;
-  return { game: { ...game, past }, elapsedMs: Math.max(0, Math.round(elapsed)) };
+  const hints = isIndex(saved.hints, Number.MAX_SAFE_INTEGER) ? saved.hints : 0;
+  return { game: { ...game, past }, elapsedMs: Math.max(0, Math.round(elapsed)), hints };
 }
 
 /** Adds or replaces a saved game, dropping the least recently saved ones beyond the cap. */

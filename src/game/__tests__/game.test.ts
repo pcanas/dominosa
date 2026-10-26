@@ -16,7 +16,7 @@ import {
   type GameAction,
   type GameState,
 } from '../game';
-import { recordSolve } from '../progress';
+import { loadProgress, recordSolve } from '../progress';
 import { boardStatus } from '../status';
 
 /*
@@ -203,15 +203,60 @@ describe('recordSolve', () => {
 
   it('stores the first solve', () => {
     expect(recordSolve({}, 'l1', 61_234.4, now)).toEqual({
-      l1: { bestMs: 61_234, timesSolved: 1, firstSolvedAt: '2026-09-27T10:00:00.000Z' },
+      l1: { bestMs: 61_234, timesSolved: 1, firstSolvedAt: '2026-09-27T10:00:00.000Z', perfect: true },
     });
   });
 
   it('keeps the best time and the first date', () => {
     const first = recordSolve({}, 'l1', 50_000, now);
     const slower = recordSolve(first, 'l1', 90_000, new Date('2026-09-28T10:00:00Z'));
-    expect(slower.l1).toEqual({ bestMs: 50_000, timesSolved: 2, firstSolvedAt: '2026-09-27T10:00:00.000Z' });
+    expect(slower.l1).toEqual({
+      bestMs: 50_000,
+      timesSolved: 2,
+      firstSolvedAt: '2026-09-27T10:00:00.000Z',
+      perfect: true,
+    });
     expect(recordSolve(slower, 'l1', 40_000, now).l1?.bestMs).toBe(40_000);
+  });
+
+  it('is perfect once a solve needs no hints, and stays so', () => {
+    const helped = recordSolve({}, 'l1', 50_000, now, 2);
+    expect(helped.l1?.perfect).toBe(false);
+    const clean = recordSolve(helped, 'l1', 60_000, now);
+    expect(clean.l1?.perfect).toBe(true);
+    expect(recordSolve(clean, 'l1', 40_000, now, 5).l1?.perfect).toBe(true);
+  });
+});
+
+describe('loadProgress', () => {
+  const entry = { bestMs: 1_000, timesSolved: 2, firstSolvedAt: '2026-09-27T10:00:00.000Z' };
+
+  it('treats solves stored before hints existed as perfect', () => {
+    expect(loadProgress({ l1: entry }, 1)).toEqual({ l1: { ...entry, perfect: true } });
+  });
+
+  it('keeps the perfect flag from version 2 on', () => {
+    expect(loadProgress({ l1: { ...entry, perfect: false }, l2: entry }, 2)).toEqual({
+      l1: { ...entry, perfect: false },
+      l2: { ...entry, perfect: false },
+    });
+  });
+
+  it('drops malformed entries', () => {
+    expect(loadProgress(null, 2)).toEqual({});
+    expect(loadProgress([entry], 2)).toEqual({});
+    expect(
+      loadProgress(
+        {
+          a: { ...entry, bestMs: -1 },
+          b: { ...entry, timesSolved: 0 },
+          c: { ...entry, firstSolvedAt: 3 },
+          d: 'x',
+          ok: entry,
+        },
+        1,
+      ),
+    ).toEqual({ ok: { ...entry, perfect: true } });
   });
 });
 

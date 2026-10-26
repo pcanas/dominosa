@@ -16,7 +16,13 @@ export {
   type PlacedTile,
 } from './game';
 export { findMistakes, hintAction, hintFocus, nextHint, type Hint, type Mistake } from './hint';
-export { recordSolve, type LevelProgress, type ProgressMap } from './progress';
+export {
+  loadProgress,
+  PROGRESS_VERSION,
+  recordSolve,
+  type LevelProgress,
+  type ProgressMap,
+} from './progress';
 export {
   decodeBoard,
   MAX_SAVED_GAMES,
