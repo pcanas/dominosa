@@ -15,6 +15,7 @@ export {
   type GameState,
   type PlacedTile,
 } from './game';
+export { findMistakes, hintAction, hintFocus, nextHint, type Hint, type Mistake } from './hint';
 export { recordSolve, type LevelProgress, type ProgressMap } from './progress';
 export {
   decodeBoard,

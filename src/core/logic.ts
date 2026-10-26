@@ -1,6 +1,6 @@
 import { dominoCount, dominoId } from './dominoes';
 import { getTopology, type Topology } from './topology';
-import type { CellIndex, Pair, Puzzle } from './types';
+import type { CellIndex, DominoId, Pair, Puzzle } from './types';
 
 /**
  * Human-style deduction techniques, from easiest to hardest.
@@ -29,7 +29,7 @@ export const TECHNIQUE_LEVEL: Readonly<Record<Technique, TechniqueLevel>> = {
   lookahead: 3,
 };
 
-/** One logical step. This is also the unit a graduated hint will explain. */
+/** One logical step. This is also the unit a graduated hint explains. */
 export interface Deduction {
   readonly technique: Technique;
   readonly level: TechniqueLevel;
@@ -39,6 +39,14 @@ export interface Deduction {
   readonly eliminate: readonly Pair[];
   /** Cells a hint should point at first. */
   readonly focus: readonly CellIndex[];
+  /**
+   * The domino the step is about: the one placed (singles), the one whose slots
+   * all share a cell (`domino-shared-cell`), or the one on the slot ruled out
+   * (`dead-end`, `lookahead`).
+   */
+  readonly domino: DominoId;
+  /** `dead-end` only: the cell, or the domino, that would be left with nowhere to go. */
+  readonly starved?: { readonly cell: CellIndex } | { readonly domino: DominoId };
 }
 
 /**
@@ -169,7 +177,14 @@ export class DeductionBoard {
       const only = this.onlyLive(cellEdges[c]!);
       if (only >= 0) {
         const pair = this.pairOf(only);
-        return { technique: 'cell-single', level: 1, place: pair, eliminate: [], focus: [c] };
+        return {
+          technique: 'cell-single',
+          level: 1,
+          place: pair,
+          eliminate: [],
+          focus: [c],
+          domino: this.edgeDomino[only]!,
+        };
       }
     }
     for (let d = 0; d < this.dominoEdges.length; d++) {
@@ -177,7 +192,14 @@ export class DeductionBoard {
       const only = this.onlyLive(this.dominoEdges[d]!);
       if (only >= 0) {
         const pair = this.pairOf(only);
-        return { technique: 'domino-single', level: 1, place: pair, eliminate: [], focus: [pair.a, pair.b] };
+        return {
+          technique: 'domino-single',
+          level: 1,
+          place: pair,
+          eliminate: [],
+          focus: [pair.a, pair.b],
+          domino: d,
+        };
       }
     }
     return null;
@@ -198,7 +220,14 @@ export class DeductionBoard {
           (e) => this.pairOf(e),
         );
         if (eliminate.length > 0) {
-          return { technique: 'domino-shared-cell', level: 2, place: null, eliminate, focus: [shared] };
+          return {
+            technique: 'domino-shared-cell',
+            level: 2,
+            place: null,
+            eliminate,
+            focus: [shared],
+            domino: d,
+          };
         }
       }
     }
@@ -238,12 +267,22 @@ export class DeductionBoard {
             place: null,
             eliminate: [this.pairOf(e)],
             focus: [a, b, c],
+            domino: d,
+            starved: { cell: c },
           };
         }
       }
       for (const other of dominoes) {
         if (!this.dominoDone[other] && starves(this.dominoEdges[other]!)) {
-          return { technique: 'dead-end', level: 2, place: null, eliminate: [this.pairOf(e)], focus: [a, b] };
+          return {
+            technique: 'dead-end',
+            level: 2,
+            place: null,
+            eliminate: [this.pairOf(e)],
+            focus: [a, b],
+            domino: d,
+            starved: { domino: other },
+          };
         }
       }
     }
@@ -259,7 +298,14 @@ export class DeductionBoard {
       const trial = this.clone();
       trial.place(pair);
       if (trial.propagateSingles()) {
-        return { technique: 'lookahead', level: 3, place: null, eliminate: [pair], focus: [pair.a, pair.b] };
+        return {
+          technique: 'lookahead',
+          level: 3,
+          place: null,
+          eliminate: [pair],
+          focus: [pair.a, pair.b],
+          domino: this.edgeDomino[e]!,
+        };
       }
     }
     return null;
