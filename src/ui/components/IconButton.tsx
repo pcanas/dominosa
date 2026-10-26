@@ -27,6 +27,8 @@ interface IconButtonProps {
   readonly selected?: boolean;
   /** Small icon on the button's corner (e.g. a lock for a toggle kept on). */
   readonly badge?: IconName;
+  /** Narrower minimum width, so five toolbar buttons fit on a 320-pt screen. */
+  readonly compact?: boolean;
   /** Spoken label when it differs from the visible one. */
   readonly accessibilityLabel?: string;
   /** Extra VoiceOver / TalkBack actions (picked from the actions rotor or menu). */
@@ -44,6 +46,7 @@ export function IconButton({
   tone = 'default',
   selected,
   badge,
+  compact = false,
   accessibilityLabel,
   accessibilityActions,
   onAccessibilityAction,
@@ -63,7 +66,12 @@ export function IconButton({
       onAccessibilityAction={onAccessibilityAction}
       {...toggleState(selected)}
       hitSlop={6}
-      style={({ pressed }) => [styles.root, disabled && styles.disabled, pressed && styles.pressed]}>
+      style={({ pressed }) => [
+        styles.root,
+        compact && styles.compact,
+        disabled && styles.disabled,
+        pressed && styles.pressed,
+      ]}>
       {({ pressed }) => (
         <>
           <View
@@ -107,6 +115,7 @@ export function toggleState(on: boolean | undefined): object {
 
 const styles = StyleSheet.create({
   root: { alignItems: 'center', gap: spacing.xs, minWidth: 64 },
+  compact: { minWidth: 56 },
   circle: {
     width: 48,
     height: 48,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -9,7 +9,15 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { DIRECTIONS, makePair, neighbourOf, type CellIndex, type Pair, type Puzzle } from '@/core';
 import type { GameAction, PairSlots, PlacedTile } from '@/game';
@@ -27,6 +35,7 @@ import {
   type BoardMetrics,
   type Rect,
 } from './geometry';
+import type { HintMarks } from './hint-marks';
 import { PipFace } from './PipFace';
 import { Tile } from './Tile';
 import { useBoardGesture, type BoardTool, type DragState } from './useBoardGesture';
@@ -49,6 +58,11 @@ interface BoardProps {
   readonly pips?: boolean;
   /** Cell of the domino that solved the board: the solve wave spreads out from it. */
   readonly celebrateFrom?: CellIndex | null;
+  /**
+   * The hint on screen: cells that pulse, walls it would draw (faint) and a wall it
+   * points at as a mistake (terracotta). Its domino slot and a wrong domino come through `highlight`.
+   */
+  readonly hint?: HintMarks | null;
   /**
    * Set while a screen reader is on: swipes are off and cells become buttons
    * that are picked one by one (see `pickCell`), with VoiceOver actions.
@@ -79,6 +93,7 @@ export function Board({
   descriptions,
   pips = false,
   celebrateFrom = null,
+  hint = null,
   screenReader = null,
 }: BoardProps) {
   const { palette } = useTheme();
@@ -105,6 +120,7 @@ export function Board({
       metrics && tapTargetAt(metrics, x, y, { hasWall: walled, isCovered: (cell) => coveredCells.has(cell) }),
   });
   const pressedWall = drag?.press?.kind === 'wall' ? pairKey(drag.press) : null;
+  const wrongWall = hint?.wrongWall ? pairKey(hint.wrongWall) : null;
   const highlightedKeys = new Set(highlight?.placed.map(pairKey) ?? []);
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -185,11 +201,36 @@ export function Board({
                 key={`wall-${wall.a}-${wall.b}`}
                 metrics={metrics}
                 pair={wall}
-                // A finger resting on a wall shows it will be removed when lifted.
-                pressed={pairKey(wall) === pressedWall}
+                // A finger resting on a wall shows it will be removed when lifted; a hint shows a wrong one.
+                pressed={pairKey(wall) === pressedWall || pairKey(wall) === wrongWall}
                 animate
               />
             ))}
+
+          {!solved &&
+            hint?.cells.map((cell) => (
+              <HintRing
+                key={`hint-${cell}`}
+                cellBox={cellBoxes[cell]!}
+                radius={cellRadius}
+                color={palette.accent}
+                pulse={hint.pulse}
+              />
+            ))}
+
+          {/* Walls a hint would draw, over its rings so they read clearly. */}
+          {!solved &&
+            hint?.walls
+              .filter((pair) => !walled(pair.a, pair.b))
+              .map((pair) => (
+                <WallBar
+                  key={`wall-hint-${pair.a}-${pair.b}`}
+                  metrics={metrics}
+                  pair={pair}
+                  pressed
+                  opacity={0.9}
+                />
+              ))}
 
           {screenReader?.selected != null && (
             <SelectionRing
@@ -356,6 +397,52 @@ function WallBar({
   );
 }
 
+/**
+ * Pulsing ring around a cell a hint points at. The pulse ends bright, so with
+ * "Reduce motion" on (Reanimated skips the animation) the ring simply stays.
+ */
+function HintRing({
+  cellBox,
+  radius: cellRadius,
+  color,
+  pulse,
+}: {
+  readonly cellBox: Box;
+  readonly radius: number;
+  readonly color: string;
+  /** Pulse (where to look), or settle faint (while the hint explains). */
+  readonly pulse: boolean;
+}) {
+  const opacity = useSharedValue(1);
+  useEffect(() => {
+    opacity.set(
+      pulse
+        ? withRepeat(withSequence(withTiming(0.3, { duration: 650 }), withTiming(1, { duration: 650 })), -1)
+        : withTiming(0.45, { duration: 200 }),
+    );
+  }, [opacity, pulse]);
+  const animated = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  const out = 4;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      aria-hidden
+      style={[
+        styles.hintRing,
+        {
+          left: cellBox.left - out,
+          top: cellBox.top - out,
+          width: cellBox.width + 2 * out,
+          height: cellBox.height + 2 * out,
+          borderRadius: cellRadius + out,
+          borderColor: color,
+        },
+        animated,
+      ]}
+    />
+  );
+}
+
 /** Ring around the cell picked first while playing with a screen reader. */
 function SelectionRing({
   cellBox,
@@ -421,6 +508,7 @@ const styles = StyleSheet.create({
   target: { position: 'absolute', zIndex: 3 },
   wall: { position: 'absolute' },
   ring: { position: 'absolute', borderWidth: 3 },
+  hintRing: { position: 'absolute', borderWidth: 3 },
   pip: {
     position: 'absolute',
     textAlign: 'center',

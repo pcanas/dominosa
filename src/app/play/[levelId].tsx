@@ -9,13 +9,17 @@ import {
   canUndo,
   createGame,
   hasWall,
+  hintAction,
   isBlank,
   isSolved,
+  nextHint,
   pairSlots,
   placedTiles,
   trackPairs,
   wallPairs,
   type GameAction,
+  type GameState,
+  type Hint,
 } from '@/game';
 import { useStrings } from '@/i18n';
 import { getLevel, LEVELS, nextLevel, type Level } from '@/levels';
@@ -43,6 +47,8 @@ import { NotFound } from '@/ui/components/NotFound';
 import { Screen } from '@/ui/components/Screen';
 import { TopBar } from '@/ui/components/TopBar';
 import { Clock } from '@/ui/play/Clock';
+import { describeHint, type HintStage } from '@/ui/play/hint-text';
+import { HintSheet } from '@/ui/play/HintSheet';
 import { SolvedCard } from '@/ui/play/SolvedCard';
 import { describeSolve, pairLabel, pairStatus } from '@/ui/play/status';
 import { StatusLine } from '@/ui/play/StatusLine';
@@ -86,6 +92,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const t = useStrings();
   const open = useSessionStore((s) => s.open);
   const dispatch = useSessionStore((s) => s.dispatch);
+  const recordHint = useSessionStore((s) => s.recordHint);
   const leave = useSessionStore((s) => s.leave);
   const pause = useSessionStore((s) => s.pause);
   const resume = useSessionStore((s) => s.resume);
@@ -109,6 +116,12 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const selectedCell = screenReaderOn ? pickedCell : null;
   /** Last message for the visually hidden live region (screen readers on Android and the web). */
   const [announcement, setAnnouncement] = useState('');
+  /** The hint on screen, for the board it was asked on: any move closes it. */
+  const [hintState, setHintState] = useState<{
+    readonly hint: Hint;
+    readonly stage: HintStage;
+    readonly game: GameState;
+  } | null>(null);
 
   useEffect(() => {
     if (!savedGamesReady) return;
@@ -155,6 +168,17 @@ function PlayScreen({ level }: { readonly level: Level }) {
     selectedPair !== null && !solved
       ? { label: pairLabel(selectedPair, order), slots: pairSlots(game, selectedPair) }
       : null;
+  const activeHint = hintState && hintState.game === game && !solved ? hintState : null;
+  const hintView = activeHint
+    ? describeHint(activeHint.hint, activeHint.stage, game, t, { pickMode: screenReaderOn })
+    : null;
+  // A hint's domino slot or wrong domino shows like a pair picked in the tracker.
+  const highlight = hintView
+    ? {
+        placed: hintView.marks.wrongDomino ? [hintView.marks.wrongDomino] : [],
+        open: hintView.marks.place ? [hintView.marks.place] : [],
+      }
+    : (pair?.slots ?? null);
   const packName = t.packs[level.packId] ?? level.packId;
   const descriptions = describeCells(game, selectedCell, t);
   const pips = numberStyle === 'pips' && canShowPips(order);
@@ -204,6 +228,30 @@ function PlayScreen({ level }: { readonly level: Level }) {
     if (action) act(action);
     else if (selected !== null) say(t.announce.selected(descriptions[selected]!));
     else say(t.announce.deselected);
+  };
+
+  /** "Hint": the first tap shows where to look (or that there is a mistake). */
+  const onHint = () => {
+    const hint = nextHint(game, level.solution);
+    if (!hint) return;
+    recordHint();
+    setTrackerOpen(false);
+    setSelectedPair(null);
+    setHintState({ hint, stage: 1, game });
+    if (soundOn) sound.hint();
+    say(describeHint(hint, 1, game, t, { pickMode: screenReaderOn }).spoken);
+  };
+
+  /** The sheet's button: "Why?" explains, then "Do it" makes the move (one step to undo). */
+  const onHintNext = () => {
+    if (!activeHint) return;
+    if (activeHint.stage === 1) {
+      setHintState({ ...activeHint, stage: 2 });
+      say(describeHint(activeHint.hint, 2, game, t, { pickMode: screenReaderOn }).spoken);
+      return;
+    }
+    setHintState(null);
+    act(hintAction(activeHint.hint));
   };
 
   const onSelectPair = (domino: DominoId) => {
@@ -288,7 +336,8 @@ function PlayScreen({ level }: { readonly level: Level }) {
         solved={solved}
         tool={wallButton.mode === 'off' ? 'domino' : 'wall'}
         onAction={act}
-        highlight={pair?.slots ?? null}
+        highlight={highlight}
+        hint={hintView?.marks ?? null}
         descriptions={descriptions}
         pips={pips}
         celebrateFrom={celebrateFrom}
@@ -323,6 +372,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
               onPress={() => act({ type: 'undo' })}
               disabled={!canUndo(game)}
               showLabel
+              compact
             />
             <IconButton
               icon="ban-outline"
@@ -344,14 +394,20 @@ function PlayScreen({ level }: { readonly level: Level }) {
               selected={wallButton.mode !== 'off'}
               badge={wallButton.mode === 'locked' ? 'lock-closed' : undefined}
               showLabel
+              compact
             />
             <IconButton
               icon="grid-outline"
               label={t.actions.pairs}
-              onPress={() => setTrackerOpen((isOpen) => !isOpen)}
+              onPress={() => {
+                setHintState(null);
+                setTrackerOpen((isOpen) => !isOpen);
+              }}
               selected={trackerOpen}
               showLabel
+              compact
             />
+            <IconButton icon="bulb-outline" label={t.actions.hint} onPress={onHint} showLabel compact />
             <IconButton
               icon="refresh"
               label={confirmingReset ? t.actions.confirmReset : t.actions.reset}
@@ -360,6 +416,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
               disabled={isBlank(game)}
               tone={confirmingReset ? 'accent' : 'default'}
               showLabel
+              compact
             />
           </>
         )}
@@ -369,6 +426,17 @@ function PlayScreen({ level }: { readonly level: Level }) {
       <Text accessibilityLiveRegion="polite" aria-live="polite" style={styles.srOnly}>
         {announcement}
       </Text>
+
+      {hintView && activeHint && (
+        <HintSheet
+          // A new sheet (and its slide-in) for each new hint, not for each step of one.
+          key={hintKey(activeHint.hint)}
+          view={hintView}
+          mistake={activeHint.hint.kind === 'mistake'}
+          onNext={onHintNext}
+          onClose={() => setHintState(null)}
+        />
+      )}
 
       {trackerOpen && !solved && (
         <PairTracker
@@ -382,6 +450,18 @@ function PlayScreen({ level }: { readonly level: Level }) {
       )}
     </Screen>
   );
+}
+
+/** Identifies a hint, so the sheet only slides in again for a different one. */
+function hintKey(hint: Hint): string {
+  switch (hint.kind) {
+    case 'mistake':
+      return `mistake-${hint.mistake.kind}-${hint.mistake.pair.a}-${hint.mistake.pair.b}`;
+    case 'reveal':
+      return `reveal-${hint.pair.a}-${hint.pair.b}`;
+    case 'step':
+      return `step-${hint.step.technique}-${hint.step.focus.join('-')}`;
+  }
 }
 
 const styles = StyleSheet.create({

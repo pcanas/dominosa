@@ -49,6 +49,35 @@ const es = {
     replay: 'Otra vez',
     levels: 'Niveles',
     settings: 'Ajustes',
+    hint: 'Pista',
+  },
+  /** The hint sheet: three taps, "look here" → "why" → "do it" (or, for a mistake, "where" → "remove it"). */
+  hint: {
+    title: 'Pista',
+    look: 'Mira las celdas marcadas',
+    /** With a screen reader, the cells are named. */
+    lookAt: (cells: string) => `Mira: ${cells}`,
+    why: '¿Por qué?',
+    doIt: 'Hazlo',
+    mistake: 'Hay un error en el tablero',
+    mistakes: (n: number) => `Hay ${n} errores en el tablero`,
+    where: '¿Dónde?',
+    wrongDomino: (pair: string) => `Esta ficha ${pair} no va aquí`,
+    wrongWall: 'Este muro separa dos celdas que forman una ficha',
+    removeDomino: 'Quítala',
+    removeWall: 'Quítalo',
+    reveal: (pair: string) => `Desde aquí no hay un paso sencillo: esta ficha ${pair} es de la solución`,
+    cellSingle: (value: number, other: number) =>
+      `Este ${value} solo puede ir con el ${other}: no le queda otra vecina libre`,
+    dominoSingle: (pair: string) => `La ficha ${pair} solo cabe aquí: es el último sitio que le queda`,
+    sharedCell: (pair: string, value: number) =>
+      `Todos los sitios que le quedan a la ficha ${pair} usan este ${value}, así que este ${value} no puede ir con nada más`,
+    deadEndCell: (pair: string, value: number) =>
+      `Si aquí fuera la ficha ${pair}, el ${value} de al lado se quedaría sin pareja: aquí va un muro`,
+    deadEndDomino: (pair: string, other: string) =>
+      `Si aquí fuera la ficha ${pair}, la ${other} ya no cabría en ningún sitio: aquí va un muro`,
+    lookahead: (pair: string) =>
+      `Si aquí fuera la ficha ${pair}, siguiendo las jugadas obligadas se llega a un callejón sin salida: aquí va un muro`,
   },
   settings: {
     title: 'Ajustes',
@@ -68,10 +97,12 @@ const es = {
   solved: {
     newBest: 'Nuevo récord',
     best: (time: string) => `Tu mejor tiempo: ${time}`,
+    perfect: 'Sin pistas',
   },
   a11y: {
     cell: (row: number, col: number, pip: number) => `Fila ${row}, columna ${col}: ${pip}`,
     solvedLevel: 'Resuelto',
+    perfectLevel: 'Resuelto sin pistas',
     inProgressLevel: 'En curso',
     wallOnce: 'Muro, para un muro',
     wallLocked: 'Muro, fijo',
@@ -116,6 +147,7 @@ const es = {
     placedDuplicate: (pair: string) => `Ficha ${pair} colocada. Está repetida`,
     removed: 'Ficha quitada',
     wallAdded: 'Muro puesto',
+    wallsAdded: (n: number) => `${n} muros puestos`,
     wallRemoved: 'Muro quitado',
     blocked: 'Hay un muro entre esas celdas',
     undone: 'Deshecho',
@@ -170,6 +202,33 @@ const en: Strings = {
     replay: 'Replay',
     levels: 'Levels',
     settings: 'Settings',
+    hint: 'Hint',
+  },
+  hint: {
+    title: 'Hint',
+    look: 'Look at the marked cells',
+    lookAt: (cells) => `Look at: ${cells}`,
+    why: 'Why?',
+    doIt: 'Do it',
+    mistake: 'There is a mistake on the board',
+    mistakes: (n) => `There are ${n} mistakes on the board`,
+    where: 'Where?',
+    wrongDomino: (pair) => `This ${pair} domino does not go here`,
+    wrongWall: 'This wall splits two cells that form a domino',
+    removeDomino: 'Remove it',
+    removeWall: 'Remove it',
+    reveal: (pair) => `There is no simple step from here: this ${pair} domino is part of the solution`,
+    cellSingle: (value, other) =>
+      `This ${value} can only go with the ${other}: it has no other free neighbour`,
+    dominoSingle: (pair) => `The ${pair} only fits here: it is the last place left for it`,
+    sharedCell: (pair, value) =>
+      `Every place left for the ${pair} uses this ${value}, so this ${value} cannot pair with anything else`,
+    deadEndCell: (pair, value) =>
+      `If the ${pair} went here, the ${value} next to it would be left without a partner: so, a wall`,
+    deadEndDomino: (pair, other) =>
+      `If the ${pair} went here, the ${other} would have nowhere left to go: so, a wall`,
+    lookahead: (pair) =>
+      `If the ${pair} went here, following the forced moves leads to a dead end: so, a wall`,
   },
   settings: {
     title: 'Settings',
@@ -189,10 +248,12 @@ const en: Strings = {
   solved: {
     newBest: 'New best time',
     best: (time) => `Your best: ${time}`,
+    perfect: 'No hints',
   },
   a11y: {
     cell: (row, col, pip) => `Row ${row}, column ${col}: ${pip}`,
     solvedLevel: 'Solved',
+    perfectLevel: 'Solved without hints',
     inProgressLevel: 'In progress',
     wallOnce: 'Wall, for one wall',
     wallLocked: 'Wall, locked',
@@ -227,6 +288,7 @@ const en: Strings = {
     placedDuplicate: (pair) => `Domino ${pair} placed. It is repeated`,
     removed: 'Domino removed',
     wallAdded: 'Wall drawn',
+    wallsAdded: (n) => `${n} walls drawn`,
     wallRemoved: 'Wall removed',
     blocked: 'There is a wall between those cells',
     undone: 'Undone',
@@ -274,12 +336,38 @@ const fr: Strings = {
     wall: 'Mur',
     pairs: 'Paires',
     close: 'Fermer',
-    reset: 'Recommencer',
+    reset: 'Effacer',
     confirmReset: 'Sûr ?',
     next: 'Suivant',
     replay: 'Rejouer',
     levels: 'Niveaux',
     settings: 'Réglages',
+    hint: 'Indice',
+  },
+  hint: {
+    title: 'Indice',
+    look: 'Regardez les cases marquées',
+    lookAt: (cells) => `Regardez : ${cells}`,
+    why: 'Pourquoi ?',
+    doIt: 'Faites-le',
+    mistake: 'Il y a une erreur sur la grille',
+    mistakes: (n) => `Il y a ${n} erreurs sur la grille`,
+    where: 'Où ?',
+    wrongDomino: (pair) => `Ce domino ${pair} ne va pas ici`,
+    wrongWall: 'Ce mur sépare deux cases qui forment un domino',
+    removeDomino: 'Enlevez-le',
+    removeWall: 'Enlevez-le',
+    reveal: (pair) => `Pas d’étape simple d’ici : ce domino ${pair} fait partie de la solution`,
+    cellSingle: (value, other) =>
+      `Ce ${value} ne peut aller qu’avec le ${other} : il n’a pas d’autre voisine libre`,
+    dominoSingle: (pair) => `Le ${pair} ne rentre qu’ici : c’est la dernière place qui lui reste`,
+    sharedCell: (pair, value) =>
+      `Toutes les places qui restent au ${pair} utilisent ce ${value}, donc ce ${value} ne peut aller avec rien d’autre`,
+    deadEndCell: (pair, value) =>
+      `Si le ${pair} allait ici, le ${value} d’à côté resterait sans partenaire : donc, un mur`,
+    deadEndDomino: (pair, other) =>
+      `Si le ${pair} allait ici, le ${other} n’aurait plus aucune place : donc, un mur`,
+    lookahead: (pair) => `Si le ${pair} allait ici, les coups forcés mènent à une impasse : donc, un mur`,
   },
   settings: {
     title: 'Réglages',
@@ -299,10 +387,12 @@ const fr: Strings = {
   solved: {
     newBest: 'Nouveau record',
     best: (time) => `Votre meilleur temps : ${time}`,
+    perfect: 'Sans indice',
   },
   a11y: {
     cell: (row, col, pip) => `Ligne ${row}, colonne ${col} : ${pip}`,
     solvedLevel: 'Résolu',
+    perfectLevel: 'Résolu sans indice',
     inProgressLevel: 'En cours',
     wallOnce: 'Mur, pour un mur',
     wallLocked: 'Mur, verrouillé',
@@ -337,6 +427,7 @@ const fr: Strings = {
     placedDuplicate: (pair) => `Domino ${pair} posé. Il est en double`,
     removed: 'Domino enlevé',
     wallAdded: 'Mur tracé',
+    wallsAdded: (n) => `${n} murs tracés`,
     wallRemoved: 'Mur enlevé',
     blocked: 'Il y a un mur entre ces cases',
     undone: 'Annulé',

@@ -52,6 +52,8 @@ export const sound = {
   remove: () => play('remove'),
   /** A wall mark is drawn. */
   wall: () => play('wall'),
+  /** A hint appears. */
+  hint: () => play('hint'),
   /** The puzzle is solved. */
   solved: () => play('solved'),
 };

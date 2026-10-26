@@ -18,7 +18,8 @@ describe.each(NAMES)('%s sound', (name) => {
   });
 
   it('is short enough not to overlap the next move', () => {
-    expect(samples.length / SAMPLE_RATE).toBeLessThanOrEqual(name === 'solved' ? 2 : 0.2);
+    const longest = { solved: 2, hint: 0.6 } as Partial<Record<SoundName, number>>;
+    expect(samples.length / SAMPLE_RATE).toBeLessThanOrEqual(longest[name] ?? 0.2);
   });
 
   it('comes out the same every time', () => {

@@ -90,5 +90,6 @@ export const sound = {
   place: () => play('place'),
   remove: () => play('remove'),
   wall: () => play('wall'),
+  hint: () => play('hint'),
   solved: () => play('solved'),
 };

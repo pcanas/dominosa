@@ -111,7 +111,9 @@ export function announcementFor(
     case 'solved':
       return solved;
     case 'wallAdded':
-      return t.announce.wallAdded;
+      return action.type === 'addWalls' && action.pairs.length > 1
+        ? t.announce.wallsAdded(action.pairs.length)
+        : t.announce.wallAdded;
     case 'wallRemoved':
       return t.announce.wallRemoved;
     case 'placed':

@@ -6,13 +6,14 @@
  *   place   a domino lands: a short wooden "clack"
  *   remove  a domino or a wall is taken away: a lighter tick
  *   wall    a wall is drawn: a muted knock
+ *   hint    a hint appears: two quiet, rising marimba notes
  *   solved  the board is solved: a soft four-note marimba chime
  */
 import { createRng, type Rng } from '@/core';
 
 export const SAMPLE_RATE = 44_100;
 
-export type SoundName = 'place' | 'remove' | 'wall' | 'solved';
+export type SoundName = 'place' | 'remove' | 'wall' | 'hint' | 'solved';
 
 interface Tone {
   readonly freq: number;
@@ -57,7 +58,9 @@ function marimbaNote(freq: number, at: number, amp: number): Tone[] {
 const G5 = 783.99;
 const B5 = 987.77;
 const D6 = 1174.66;
+const E6 = 1318.51;
 const G6 = 1567.98;
+const A6 = 1760;
 
 export const RECIPES: Readonly<Record<SoundName, Recipe>> = {
   place: {
@@ -92,6 +95,13 @@ export const RECIPES: Readonly<Record<SoundName, Recipe>> = {
       { freq: 2050, amp: 0.12, decay: 0.005 },
     ],
     noise: [{ amp: 0.35, decay: 0.0015, lowpass: 4000 }],
+  },
+  hint: {
+    seconds: 0.5,
+    peakDb: -14,
+    tones: [...marimbaNote(E6, 0, 0.7), ...marimbaNote(A6, 0.075, 0.6)],
+    noise: [0, 0.075].map((at) => ({ amp: 0.04, decay: 0.0015, at, highpass: 2500 })),
+    echoes: [[0.031, 0.12]],
   },
   solved: {
     seconds: 1.6,
