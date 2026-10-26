@@ -29,14 +29,28 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <AppText variant="title" accessibilityRole="header" maxFontSizeMultiplier={1.3}>
+            <AppText
+              variant="title"
+              accessibilityRole="header"
+              maxFontSizeMultiplier={1.3}
+              // Room for the two buttons beside it on the narrowest phones with large text.
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={styles.title}>
               {t.appName}
             </AppText>
-            <IconButton
-              icon="settings-outline"
-              label={t.actions.settings}
-              onPress={() => router.push('/settings')}
-            />
+            <View style={styles.actions}>
+              <IconButton
+                icon="help-circle-outline"
+                label={t.help.howToPlay}
+                onPress={() => router.push('/tutorial')}
+              />
+              <IconButton
+                icon="settings-outline"
+                label={t.actions.settings}
+                onPress={() => router.push('/settings')}
+              />
+            </View>
           </View>
           <AppText tone="secondary">{t.homeSubtitle}</AppText>
         </View>
@@ -63,6 +77,8 @@ const styles = StyleSheet.create({
   content: { paddingVertical: spacing.xl, gap: spacing.xl },
   header: { gap: spacing.sm },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  title: { flexShrink: 1 },
+  actions: { flexDirection: 'row' },
   list: { gap: spacing.md },
   version: { textAlign: 'center' },
 });

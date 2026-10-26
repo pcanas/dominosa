@@ -1,15 +1,15 @@
 import { create } from 'zustand';
 
 import {
-  coveredCellCount,
   createGame,
   gameReducer,
-  hasWall,
   isBlank,
   isSolved,
+  moveOutcome,
   restoreGame,
   type GameAction,
   type GameState,
+  type MoveOutcome,
 } from '@/game';
 import type { Level } from '@/levels';
 
@@ -17,8 +17,7 @@ import { useProgressStore } from './progress-store';
 import { useSavedGamesStore } from './saved-games-store';
 
 /** What a dispatched action did, so the UI can pick the right feedback. */
-export type DispatchOutcome =
-  'unchanged' | 'blocked' | 'placed' | 'removed' | 'wallAdded' | 'wallRemoved' | 'solved';
+export type DispatchOutcome = MoveOutcome;
 
 interface SessionStore {
   readonly levelId: string | null;
@@ -130,12 +129,10 @@ export const useSessionStore = create<SessionStore>()((set, get) => {
       const { game, levelId } = get();
       if (!game || !levelId) return 'unchanged';
       const next = gameReducer(game, action);
-      if (next === game) {
-        return action.type === 'place' && hasWall(game, action.a, action.b) ? 'blocked' : 'unchanged';
-      }
+      const outcome = moveOutcome(game, next, action);
+      if (outcome === 'unchanged' || outcome === 'blocked') return outcome;
 
-      // Only a placement can complete the board (undo never restores a solved one).
-      if (action.type === 'place' && isSolved(next)) {
+      if (outcome === 'solved') {
         const solvedInMs = elapsedNow(get());
         const progress = useProgressStore.getState();
         const bestBeforeMs = progress.levels[levelId]?.bestMs ?? null;
@@ -160,12 +157,7 @@ export const useSessionStore = create<SessionStore>()((set, get) => {
         set(get().runningSince === null ? { game: next, runningSince: Date.now() } : { game: next });
       }
       persist();
-
-      if (action.type === 'addWall' || action.type === 'addWalls') return 'wallAdded';
-      if (action.type === 'removeWall') return 'wallRemoved';
-      return action.type === 'place' || coveredCellCount(next) > coveredCellCount(game)
-        ? 'placed'
-        : 'removed';
+      return outcome;
     },
 
     recordHint: () => {

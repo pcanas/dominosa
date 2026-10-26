@@ -1,7 +1,7 @@
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useState } from 'react';
-import { AppState, StyleSheet, Text, View, type AppStateStatus } from 'react-native';
+import { AppState, StyleSheet, View, type AppStateStatus } from 'react-native';
 
 import { dominoId, type CellIndex, type DominoId } from '@/core';
 import {
@@ -23,35 +23,32 @@ import {
 } from '@/game';
 import { useStrings } from '@/i18n';
 import { getLevel, LEVELS, nextLevel, type Level } from '@/levels';
-import { haptics } from '@/platform/haptics';
-import { announce, useScreenReader } from '@/platform/screen-reader';
+import { useScreenReader } from '@/platform/screen-reader';
 import { sound } from '@/platform/sound';
 import { useSavedGamesStore } from '@/state/saved-games-store';
-import { useSessionStore, type DispatchOutcome } from '@/state/session-store';
+import { useSessionStore } from '@/state/session-store';
 import { useSettingsStore } from '@/state/settings-store';
 import { announcementFor, cellActions, describeCells } from '@/ui/board/a11y';
 import { Board } from '@/ui/board/Board';
 import { WAVE_TURN_MS, waveEnd } from '@/ui/board/celebration';
+import { hintHighlight } from '@/ui/board/hint-marks';
 import { canShowPips } from '@/ui/board/pips';
 import { pickCell } from '@/ui/board/tap-select';
-import {
-  afterWallDrawn,
-  tapWallButton,
-  toggleWallLock,
-  WALL_BUTTON_OFF,
-  type WallButton,
-} from '@/ui/board/wall-mode';
+import { afterWallDrawn, WALL_BUTTON_OFF, type WallButton } from '@/ui/board/wall-mode';
 import { AppText } from '@/ui/components/AppText';
 import { IconButton } from '@/ui/components/IconButton';
+import { LiveRegion, useAnnouncer } from '@/ui/components/LiveRegion';
 import { NotFound } from '@/ui/components/NotFound';
 import { Screen } from '@/ui/components/Screen';
 import { TopBar } from '@/ui/components/TopBar';
 import { Clock } from '@/ui/play/Clock';
-import { describeHint, type HintStage } from '@/ui/play/hint-text';
+import { moveFeedback } from '@/ui/play/feedback';
+import { describeHint, hintKey, type HintStage } from '@/ui/play/hint-text';
 import { HintSheet } from '@/ui/play/HintSheet';
 import { SolvedCard } from '@/ui/play/SolvedCard';
 import { describeSolve, pairLabel, pairStatus } from '@/ui/play/status';
 import { StatusLine } from '@/ui/play/StatusLine';
+import { WallToggle } from '@/ui/play/WallToggle';
 import { spacing } from '@/ui/theme';
 import { PairTracker } from '@/ui/tracker/PairTracker';
 
@@ -68,25 +65,6 @@ export default function PlayRoute() {
 }
 
 const RESET_CONFIRM_MS = 3000;
-
-/** Vibration for each kind of move. */
-const HAPTICS: Partial<Record<DispatchOutcome, () => void>> = {
-  placed: haptics.place,
-  removed: haptics.remove,
-  wallAdded: haptics.wall,
-  wallRemoved: haptics.remove,
-  blocked: haptics.blocked,
-  solved: haptics.solved,
-};
-
-/** Sound for each kind of move (a placement refused by a wall only vibrates). */
-const SOUNDS: Partial<Record<DispatchOutcome, () => void>> = {
-  placed: sound.place,
-  removed: sound.remove,
-  wallAdded: sound.wall,
-  wallRemoved: sound.remove,
-  solved: sound.solved,
-};
 
 function PlayScreen({ level }: { readonly level: Level }) {
   const t = useStrings();
@@ -114,8 +92,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
   /** Cell picked first while playing with a screen reader. */
   const [pickedCell, setPickedCell] = useState<CellIndex | null>(null);
   const selectedCell = screenReaderOn ? pickedCell : null;
-  /** Last message for the visually hidden live region (screen readers on Android and the web). */
-  const [announcement, setAnnouncement] = useState('');
+  const { announcement, say } = useAnnouncer();
   /** The hint on screen, for the board it was asked on: any move closes it. */
   const [hintState, setHintState] = useState<{
     readonly hint: Hint;
@@ -173,27 +150,15 @@ function PlayScreen({ level }: { readonly level: Level }) {
     ? describeHint(activeHint.hint, activeHint.stage, game, t, { pickMode: screenReaderOn })
     : null;
   // A hint's domino slot or wrong domino shows like a pair picked in the tracker.
-  const highlight = hintView
-    ? {
-        placed: hintView.marks.wrongDomino ? [hintView.marks.wrongDomino] : [],
-        open: hintView.marks.place ? [hintView.marks.place] : [],
-      }
-    : (pair?.slots ?? null);
+  const highlight = hintView ? hintHighlight(hintView.marks) : (pair?.slots ?? null);
   const packName = t.packs[level.packId] ?? level.packId;
   const descriptions = describeCells(game, selectedCell, t);
   const pips = numberStyle === 'pips' && canShowPips(order);
   const tiles = placedTiles(game);
 
-  const say = (message: string) => {
-    // Alternate a zero-width space so the same message twice is still read twice.
-    setAnnouncement((previous) => (previous.endsWith('​') ? message : `${message}​`));
-    announce(message);
-  };
-
   const act = (action: GameAction) => {
     const outcome = dispatch(action);
-    if (vibration) HAPTICS[outcome]?.();
-    if (soundOn) SOUNDS[outcome]?.();
+    moveFeedback(outcome, { sound: soundOn, vibration });
     const after = useSessionStore.getState();
     if (after.game) {
       const summary = describeSolve(after.solvedInMs ?? 0, after.bestBeforeMs, after.hintsUsed, t);
@@ -262,13 +227,6 @@ function PlayScreen({ level }: { readonly level: Level }) {
     setSelectedPair(domino);
     setTrackerOpen(false);
     say(pairStatus({ label: pairLabel(domino, order), slots: pairSlots(game, domino) }, t).text);
-  };
-
-  /** VoiceOver / TalkBack action on the wall button: lock it, or let it go. */
-  const onWallAction = () => {
-    const next = toggleWallLock(wallButton, Date.now());
-    setWallButton(next);
-    say(next.mode === 'locked' ? t.announce.wallLocked : t.announce.wallOff);
   };
 
   const onReset = () => {
@@ -374,28 +332,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
               showLabel
               compact
             />
-            <IconButton
-              icon="ban-outline"
-              label={t.actions.wall}
-              accessibilityLabel={
-                wallButton.mode === 'locked'
-                  ? t.a11y.wallLocked
-                  : wallButton.mode === 'once'
-                    ? t.a11y.wallOnce
-                    : t.actions.wall
-              }
-              onPress={() => setWallButton((current) => tapWallButton(current, Date.now()))}
-              accessibilityActions={[
-                { name: 'lock', label: wallButton.mode === 'locked' ? t.a11y.wallUnlock : t.a11y.wallLock },
-              ]}
-              onAccessibilityAction={(e) => {
-                if (e.nativeEvent.actionName === 'lock') onWallAction();
-              }}
-              selected={wallButton.mode !== 'off'}
-              badge={wallButton.mode === 'locked' ? 'lock-closed' : undefined}
-              showLabel
-              compact
-            />
+            <WallToggle state={wallButton} onChange={setWallButton} say={say} />
             <IconButton
               icon="grid-outline"
               label={t.actions.pairs}
@@ -422,10 +359,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
         )}
       </View>
 
-      {/* Spoken by TalkBack and by screen readers on the web; VoiceOver gets `announce`. */}
-      <Text accessibilityLiveRegion="polite" aria-live="polite" style={styles.srOnly}>
-        {announcement}
-      </Text>
+      <LiveRegion announcement={announcement} />
 
       {hintView && activeHint && (
         <HintSheet
@@ -452,21 +386,8 @@ function PlayScreen({ level }: { readonly level: Level }) {
   );
 }
 
-/** Identifies a hint, so the sheet only slides in again for a different one. */
-function hintKey(hint: Hint): string {
-  switch (hint.kind) {
-    case 'mistake':
-      return `mistake-${hint.mistake.kind}-${hint.mistake.pair.a}-${hint.mistake.pair.b}`;
-    case 'reveal':
-      return `reveal-${hint.pair.a}-${hint.pair.b}`;
-    case 'step':
-      return `step-${hint.step.technique}-${hint.step.focus.join('-')}`;
-  }
-}
-
 const styles = StyleSheet.create({
   subtitle: { flexDirection: 'row', alignItems: 'center' },
-  srOnly: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 },
   // Evenly spread up to a comfortable width, so four buttons still fit on a 320 pt screen.
   toolbar: {
     flexDirection: 'row',

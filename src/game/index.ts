@@ -34,5 +34,13 @@ export {
   type SavedGame,
   type SavedGames,
 } from './saved-game';
+export { moveOutcome, type MoveOutcome } from './outcome';
 export { boardStatus, type BoardStatus } from './status';
+export {
+  TUTORIAL_STEPS,
+  tutorialBoard,
+  tutorialPlan,
+  type TutorialPlan,
+  type TutorialStep,
+} from './tutorial';
 export { pairSlots, trackPairs, type PairSlots, type TrackedPair } from './tracker';

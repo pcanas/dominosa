@@ -1,4 +1,5 @@
 import type { CellIndex, Pair } from '@/core';
+import type { PairSlots } from '@/game';
 
 /** What the board shows for the hint on screen (see `describeHint`). */
 export interface HintMarks {
@@ -24,3 +25,11 @@ export const NO_HINT_MARKS: HintMarks = {
   wrongDomino: null,
   wrongWall: null,
 };
+
+/** A hint's domino slot and the wrong domino it points at, drawn like a pair picked in the tracker. */
+export function hintHighlight(marks: HintMarks): PairSlots {
+  return {
+    placed: marks.wrongDomino ? [marks.wrongDomino] : [],
+    open: marks.place ? [marks.place] : [],
+  };
+}

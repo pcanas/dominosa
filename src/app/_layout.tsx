@@ -7,6 +7,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { registerServiceWorker } from '@/platform/service-worker';
+import { useOnboardingStore } from '@/state/onboarding-store';
 import { useProgressStore } from '@/state/progress-store';
 import { useSavedGamesStore } from '@/state/saved-games-store';
 import { useSettingsStore } from '@/state/settings-store';
@@ -23,6 +24,7 @@ export default function RootLayout() {
     void useProgressStore.persist.rehydrate();
     void useSavedGamesStore.persist.rehydrate();
     void useSettingsStore.persist.rehydrate();
+    void useOnboardingStore.persist.rehydrate();
     registerServiceWorker();
   }, []);
 

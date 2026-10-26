@@ -1,3 +1,5 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import Head from 'expo-router/head';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
@@ -101,6 +103,10 @@ export default function SettingsScreen() {
             onChange={(value) => settings.update({ language: value })}
           />
         </Section>
+
+        <Section title={t.help.title}>
+          <LinkRow label={t.help.howToPlay} onPress={() => router.push('/tutorial')} />
+        </Section>
       </ScrollView>
     </Screen>
   );
@@ -143,6 +149,24 @@ function SwitchRow({
         {...(Platform.OS === 'web' ? ({ activeThumbColor: palette.tile } as object) : {})}
       />
     </View>
+  );
+}
+
+/** A row that opens another screen. */
+function LinkRow({ label, onPress }: { readonly label: string; readonly onPress: () => void }) {
+  const { palette } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.row,
+        styles.link,
+        pressed && { backgroundColor: palette.surfacePressed },
+      ]}>
+      <AppText style={styles.rowLabel}>{label}</AppText>
+      <Ionicons name="chevron-forward" size={20} color={palette.textSecondary} aria-hidden />
+    </Pressable>
   );
 }
 
@@ -198,6 +222,8 @@ const styles = StyleSheet.create({
   card: { borderRadius: radius.lg, borderWidth: 1, padding: spacing.md, gap: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
   rowLabel: { flex: 1 },
+  // The whole row is the button; the card's padding stays around it.
+  link: { marginHorizontal: -spacing.sm, paddingHorizontal: spacing.sm, borderRadius: radius.md },
   choice: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   option: {
     flexGrow: 1,

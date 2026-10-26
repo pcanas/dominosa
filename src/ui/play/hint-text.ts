@@ -117,3 +117,15 @@ export function describeHint(
 function partnerIn(pair: Pair, cell: CellIndex): CellIndex {
   return pair.a === cell ? pair.b : pair.a;
 }
+
+/** Identifies a hint, so the sheet only slides in again for a different one. */
+export function hintKey(hint: Hint): string {
+  switch (hint.kind) {
+    case 'mistake':
+      return `mistake-${hint.mistake.kind}-${hint.mistake.pair.a}-${hint.mistake.pair.b}`;
+    case 'reveal':
+      return `reveal-${hint.pair.a}-${hint.pair.b}`;
+    case 'step':
+      return `step-${hint.step.technique}-${hint.step.focus.join('-')}`;
+  }
+}

@@ -155,6 +155,37 @@ const es = {
     wallLocked: 'Muro fijo',
     wallOff: 'Muro desactivado',
   },
+  /** The guided tutorial on its own small board (see `src/game/tutorial.ts`). */
+  tutorial: {
+    title: 'Cómo se juega',
+    skip: 'Saltar',
+    stepOf: (step: number, total: number) => `Paso ${step} de ${total}`,
+    place: 'Desliza entre las dos celdas marcadas para colocar una ficha',
+    placePick: 'Elige una de las celdas marcadas y luego la otra para colocar una ficha',
+    remove: (pair: string) =>
+      `Cada ficha sale una sola vez, y esta ${pair} está repetida. Toca la marcada para quitarla`,
+    removePick: (pair: string) =>
+      `Cada ficha sale una sola vez, y esta ${pair} está repetida. Elige dos veces la marcada para quitarla`,
+    wall: (pair: string) =>
+      `Como la ${pair} ya está puesta, las celdas marcadas no pueden ir juntas. Toca Muro y desliza entre ellas`,
+    wallPick: (pair: string) =>
+      `Como la ${pair} ya está puesta, las celdas marcadas no pueden ir juntas. Toca Muro y elígelas`,
+    hint: 'Si te atascas, toca Pista: te dice dónde mirar, por qué, y si quieres lo hace por ti',
+    finish: 'Ahora tú: termina el tablero. Cada ficha, una sola vez',
+    good: '¡Bien!',
+    done: '¡Ya sabes jugar!',
+    play: 'A jugar',
+    back: 'Volver',
+    nudgePlace: 'Prueba con las dos celdas marcadas',
+    nudgeRemove: 'Toca la ficha marcada para quitarla',
+    nudgeWall: 'Primero toca Muro y luego desliza entre las celdas marcadas',
+    nudgeWallPick: 'Primero toca Muro y luego elige las celdas marcadas',
+    nudgeHint: 'Toca Pista, abajo',
+  },
+  help: {
+    title: 'Ayuda',
+    howToPlay: 'Cómo se juega',
+  },
   notFound: 'Este nivel no existe.',
   goHome: 'Ir al inicio',
 };
@@ -296,6 +327,36 @@ const en: Strings = {
     wallLocked: 'Wall locked',
     wallOff: 'Wall off',
   },
+  tutorial: {
+    title: 'How to play',
+    skip: 'Skip',
+    stepOf: (step, total) => `Step ${step} of ${total}`,
+    place: 'Swipe between the two marked cells to place a domino',
+    placePick: 'Pick one of the marked cells, then the other, to place a domino',
+    remove: (pair) =>
+      `Each domino appears only once, and this ${pair} is repeated. Tap the marked one to remove it`,
+    removePick: (pair) =>
+      `Each domino appears only once, and this ${pair} is repeated. Pick the marked one twice to remove it`,
+    wall: (pair) =>
+      `The ${pair} is already placed, so the marked cells cannot pair up. Tap Wall and swipe between them`,
+    wallPick: (pair) =>
+      `The ${pair} is already placed, so the marked cells cannot pair up. Tap Wall and pick them`,
+    hint: 'If you get stuck, tap Hint: it tells you where to look, why, and can make the move for you',
+    finish: 'Your turn: finish the board. Each domino, just once',
+    good: 'Nice!',
+    done: 'You know how to play!',
+    play: 'Let’s play',
+    back: 'Back',
+    nudgePlace: 'Try the two marked cells',
+    nudgeRemove: 'Tap the marked domino to remove it',
+    nudgeWall: 'Tap Wall first, then swipe between the marked cells',
+    nudgeWallPick: 'Tap Wall first, then pick the marked cells',
+    nudgeHint: 'Tap Hint, below',
+  },
+  help: {
+    title: 'Help',
+    howToPlay: 'How to play',
+  },
   notFound: 'This level does not exist.',
   goHome: 'Go home',
 };
@@ -434,6 +495,36 @@ const fr: Strings = {
     reset: 'Grille vide',
     wallLocked: 'Mur verrouillé',
     wallOff: 'Mur désactivé',
+  },
+  tutorial: {
+    title: 'Comment jouer',
+    skip: 'Passer',
+    stepOf: (step, total) => `Étape ${step} sur ${total}`,
+    place: 'Glissez entre les deux cases marquées pour poser un domino',
+    placePick: 'Choisissez une des cases marquées, puis l’autre, pour poser un domino',
+    remove: (pair) =>
+      `Chaque domino n’apparaît qu’une fois, et ce ${pair} est en double. Touchez celui qui est marqué pour l’enlever`,
+    removePick: (pair) =>
+      `Chaque domino n’apparaît qu’une fois, et ce ${pair} est en double. Choisissez deux fois celui qui est marqué pour l’enlever`,
+    wall: (pair) =>
+      `Le ${pair} est déjà posé, donc les cases marquées ne vont pas ensemble. Touchez Mur et glissez entre elles`,
+    wallPick: (pair) =>
+      `Le ${pair} est déjà posé, donc les cases marquées ne vont pas ensemble. Touchez Mur et choisissez-les`,
+    hint: 'Si vous bloquez, touchez Indice : il vous dit où regarder, pourquoi, et peut jouer le coup pour vous',
+    finish: 'À vous : terminez la grille. Chaque domino, une seule fois',
+    good: 'Bien !',
+    done: 'Vous savez jouer !',
+    play: 'À vous de jouer',
+    back: 'Retour',
+    nudgePlace: 'Essayez avec les deux cases marquées',
+    nudgeRemove: 'Touchez le domino marqué pour l’enlever',
+    nudgeWall: 'Touchez d’abord Mur, puis glissez entre les cases marquées',
+    nudgeWallPick: 'Touchez d’abord Mur, puis choisissez les cases marquées',
+    nudgeHint: 'Touchez Indice, en bas',
+  },
+  help: {
+    title: 'Aide',
+    howToPlay: 'Comment jouer',
   },
   notFound: 'Ce niveau n’existe pas.',
   goHome: 'Accueil',
