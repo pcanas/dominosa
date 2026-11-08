@@ -1,7 +1,7 @@
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useState } from 'react';
-import { AppState, StyleSheet, Text, View, type AppStateStatus } from 'react-native';
+import { AppState, StyleSheet, View, type AppStateStatus } from 'react-native';
 
 import { dominoId, type CellIndex, type DominoId } from '@/core';
 import {
@@ -9,33 +9,46 @@ import {
   canUndo,
   createGame,
   hasWall,
+  hintAction,
   isBlank,
   isSolved,
+  nextHint,
   pairSlots,
   placedTiles,
   trackPairs,
   wallPairs,
   type GameAction,
+  type GameState,
+  type Hint,
 } from '@/game';
-import { formatDuration, useStrings } from '@/i18n';
+import { useStrings } from '@/i18n';
 import { getLevel, LEVELS, nextLevel, type Level } from '@/levels';
-import { haptics } from '@/platform/haptics';
-import { announce, useScreenReader } from '@/platform/screen-reader';
+import { useScreenReader } from '@/platform/screen-reader';
+import { sound } from '@/platform/sound';
 import { useSavedGamesStore } from '@/state/saved-games-store';
-import { useSessionStore, type DispatchOutcome } from '@/state/session-store';
+import { useSessionStore } from '@/state/session-store';
 import { useSettingsStore } from '@/state/settings-store';
 import { announcementFor, cellActions, describeCells } from '@/ui/board/a11y';
 import { Board } from '@/ui/board/Board';
+import { WAVE_TURN_MS, waveEnd } from '@/ui/board/celebration';
+import { hintHighlight } from '@/ui/board/hint-marks';
+import { canShowPips } from '@/ui/board/pips';
 import { pickCell } from '@/ui/board/tap-select';
-import { afterWallDrawn, tapWallButton, WALL_BUTTON_OFF, type WallButton } from '@/ui/board/wall-mode';
+import { afterWallDrawn, WALL_BUTTON_OFF, type WallButton } from '@/ui/board/wall-mode';
 import { AppText } from '@/ui/components/AppText';
 import { IconButton } from '@/ui/components/IconButton';
+import { LiveRegion, useAnnouncer } from '@/ui/components/LiveRegion';
 import { NotFound } from '@/ui/components/NotFound';
 import { Screen } from '@/ui/components/Screen';
 import { TopBar } from '@/ui/components/TopBar';
 import { Clock } from '@/ui/play/Clock';
-import { pairLabel, pairStatus } from '@/ui/play/status';
+import { moveFeedback } from '@/ui/play/feedback';
+import { describeHint, hintKey, type HintStage } from '@/ui/play/hint-text';
+import { HintSheet } from '@/ui/play/HintSheet';
+import { SolvedCard } from '@/ui/play/SolvedCard';
+import { describeSolve, pairLabel, pairStatus } from '@/ui/play/status';
 import { StatusLine } from '@/ui/play/StatusLine';
+import { WallToggle } from '@/ui/play/WallToggle';
 import { spacing } from '@/ui/theme';
 import { PairTracker } from '@/ui/tracker/PairTracker';
 
@@ -53,20 +66,11 @@ export default function PlayRoute() {
 
 const RESET_CONFIRM_MS = 3000;
 
-/** Vibration for each kind of move. */
-const HAPTICS: Partial<Record<DispatchOutcome, () => void>> = {
-  placed: haptics.place,
-  removed: haptics.remove,
-  wallAdded: haptics.wall,
-  wallRemoved: haptics.remove,
-  blocked: haptics.blocked,
-  solved: haptics.solved,
-};
-
 function PlayScreen({ level }: { readonly level: Level }) {
   const t = useStrings();
   const open = useSessionStore((s) => s.open);
   const dispatch = useSessionStore((s) => s.dispatch);
+  const recordHint = useSessionStore((s) => s.recordHint);
   const leave = useSessionStore((s) => s.leave);
   const pause = useSessionStore((s) => s.pause);
   const resume = useSessionStore((s) => s.resume);
@@ -80,18 +84,34 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const [selectedPair, setSelectedPair] = useState<DominoId | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const vibration = useSettingsStore((s) => s.vibration);
+  const soundOn = useSettingsStore((s) => s.sound);
+  const numberStyle = useSettingsStore((s) => s.numberStyle);
+  /** Off in settings: no Hint button, and a hint on screen goes away. */
+  const hintsOn = useSettingsStore((s) => s.hints);
+  /** Cell of the domino that solved the board, where the solve wave starts. */
+  const [celebrateFrom, setCelebrateFrom] = useState<CellIndex | null>(null);
   const screenReaderOn = useScreenReader();
   /** Cell picked first while playing with a screen reader. */
   const [pickedCell, setPickedCell] = useState<CellIndex | null>(null);
   const selectedCell = screenReaderOn ? pickedCell : null;
-  /** Last message for the visually hidden live region (screen readers on Android and the web). */
-  const [announcement, setAnnouncement] = useState('');
+  const { announcement, say } = useAnnouncer();
+  /** The hint on screen, for the board it was asked on: any move closes it. */
+  const [hintState, setHintState] = useState<{
+    readonly hint: Hint;
+    readonly stage: HintStage;
+    readonly game: GameState;
+  } | null>(null);
 
   useEffect(() => {
     if (!savedGamesReady) return;
     open(level);
     return () => leave(level.id);
   }, [level, savedGamesReady, open, leave]);
+
+  // Load the sounds before the first move needs them.
+  useEffect(() => {
+    if (soundOn) sound.prepare();
+  }, [soundOn]);
 
   // The clock only runs while this screen is in front (not under settings) and the app is active;
   // pausing also saves the game.
@@ -127,21 +147,24 @@ function PlayScreen({ level }: { readonly level: Level }) {
     selectedPair !== null && !solved
       ? { label: pairLabel(selectedPair, order), slots: pairSlots(game, selectedPair) }
       : null;
+  const activeHint = hintState && hintsOn && hintState.game === game && !solved ? hintState : null;
+  const hintView = activeHint
+    ? describeHint(activeHint.hint, activeHint.stage, game, t, { pickMode: screenReaderOn })
+    : null;
+  // A hint's domino slot or wrong domino shows like a pair picked in the tracker.
+  const highlight = hintView ? hintHighlight(hintView.marks) : (pair?.slots ?? null);
   const packName = t.packs[level.packId] ?? level.packId;
   const descriptions = describeCells(game, selectedCell, t);
-
-  const say = (message: string) => {
-    // Alternate a zero-width space so the same message twice is still read twice.
-    setAnnouncement((previous) => (previous.endsWith('​') ? message : `${message}​`));
-    announce(message);
-  };
+  const pips = numberStyle === 'pips' && canShowPips(order);
+  const tiles = placedTiles(game);
 
   const act = (action: GameAction) => {
     const outcome = dispatch(action);
-    if (vibration) HAPTICS[outcome]?.();
+    moveFeedback(outcome, { sound: soundOn, vibration });
     const after = useSessionStore.getState();
     if (after.game) {
-      const solvedText = t.status.solved(formatDuration(after.solvedInMs ?? 0));
+      const summary = describeSolve(after.solvedInMs ?? 0, after.bestBeforeMs, after.hintsUsed, t);
+      const solvedText = summary.detail ? `${summary.title} ${summary.detail}` : summary.title;
       const message = announcementFor(action, outcome, after.game, t, solvedText);
       if (message) say(message);
     }
@@ -151,6 +174,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
       setWallButton(WALL_BUTTON_OFF);
       setTrackerOpen(false);
       setSelectedPair(null);
+      if (action.type === 'place') setCelebrateFrom(action.a);
     }
     // Placing the pair picked in the tracker is what the highlight was for.
     if (outcome === 'placed' && action.type === 'place' && selectedPair !== null) {
@@ -171,6 +195,30 @@ function PlayScreen({ level }: { readonly level: Level }) {
     if (action) act(action);
     else if (selected !== null) say(t.announce.selected(descriptions[selected]!));
     else say(t.announce.deselected);
+  };
+
+  /** "Hint": the first tap shows where to look (or that there is a mistake). */
+  const onHint = () => {
+    const hint = nextHint(game, level.solution);
+    if (!hint) return;
+    recordHint();
+    setTrackerOpen(false);
+    setSelectedPair(null);
+    setHintState({ hint, stage: 1, game });
+    if (soundOn) sound.hint();
+    say(describeHint(hint, 1, game, t, { pickMode: screenReaderOn }).spoken);
+  };
+
+  /** The sheet's button: "Why?" explains, then "Do it" makes the move (one step to undo). */
+  const onHintNext = () => {
+    if (!activeHint) return;
+    if (activeHint.stage === 1) {
+      setHintState({ ...activeHint, stage: 2 });
+      say(describeHint(activeHint.hint, 2, game, t, { pickMode: screenReaderOn }).spoken);
+      return;
+    }
+    setHintState(null);
+    act(hintAction(activeHint.hint));
   };
 
   const onSelectPair = (domino: DominoId) => {
@@ -222,24 +270,37 @@ function PlayScreen({ level }: { readonly level: Level }) {
         </View>
       </TopBar>
 
-      <StatusLine
-        status={boardStatus(game)}
-        wallMode={wallButton.mode}
-        pickMode={screenReaderOn}
-        pair={pair}
-        onClearPair={() => setSelectedPair(null)}
-        solvedInMs={session?.solvedInMs ?? null}
-      />
+      {solved && session?.solvedInMs != null ? (
+        <SolvedCard
+          summary={describeSolve(session.solvedInMs, session.bestBeforeMs, session.hintsUsed, t)}
+          // Shows up as the solve wave settles.
+          delay={
+            celebrateFrom === null ? 0 : waveEnd(tiles, celebrateFrom, level.puzzle.cols) - WAVE_TURN_MS / 2
+          }
+        />
+      ) : (
+        <StatusLine
+          status={boardStatus(game)}
+          wallMode={wallButton.mode}
+          pickMode={screenReaderOn}
+          pair={pair}
+          onClearPair={() => setSelectedPair(null)}
+          solvedInMs={session?.solvedInMs ?? null}
+        />
+      )}
 
       <Board
         puzzle={level.puzzle}
-        tiles={placedTiles(game)}
+        tiles={tiles}
         walls={wallPairs(game)}
         solved={solved}
         tool={wallButton.mode === 'off' ? 'domino' : 'wall'}
         onAction={act}
-        highlight={pair?.slots ?? null}
+        highlight={highlight}
+        hint={hintView?.marks ?? null}
         descriptions={descriptions}
+        pips={pips}
+        celebrateFrom={celebrateFrom}
         screenReader={
           screenReaderOn
             ? {
@@ -271,29 +332,23 @@ function PlayScreen({ level }: { readonly level: Level }) {
               onPress={() => act({ type: 'undo' })}
               disabled={!canUndo(game)}
               showLabel
+              compact
             />
-            <IconButton
-              icon="ban-outline"
-              label={t.actions.wall}
-              accessibilityLabel={
-                wallButton.mode === 'locked'
-                  ? t.a11y.wallLocked
-                  : wallButton.mode === 'once'
-                    ? t.a11y.wallOnce
-                    : t.actions.wall
-              }
-              onPress={() => setWallButton((current) => tapWallButton(current, Date.now()))}
-              selected={wallButton.mode !== 'off'}
-              badge={wallButton.mode === 'locked' ? 'lock-closed' : undefined}
-              showLabel
-            />
+            <WallToggle state={wallButton} onChange={setWallButton} say={say} />
             <IconButton
               icon="grid-outline"
               label={t.actions.pairs}
-              onPress={() => setTrackerOpen((isOpen) => !isOpen)}
+              onPress={() => {
+                setHintState(null);
+                setTrackerOpen((isOpen) => !isOpen);
+              }}
               selected={trackerOpen}
               showLabel
+              compact
             />
+            {hintsOn && (
+              <IconButton icon="bulb-outline" label={t.actions.hint} onPress={onHint} showLabel compact />
+            )}
             <IconButton
               icon="refresh"
               label={confirmingReset ? t.actions.confirmReset : t.actions.reset}
@@ -302,15 +357,24 @@ function PlayScreen({ level }: { readonly level: Level }) {
               disabled={isBlank(game)}
               tone={confirmingReset ? 'accent' : 'default'}
               showLabel
+              compact
             />
           </>
         )}
       </View>
 
-      {/* Spoken by TalkBack and by screen readers on the web; VoiceOver gets `announce`. */}
-      <Text accessibilityLiveRegion="polite" aria-live="polite" style={styles.srOnly}>
-        {announcement}
-      </Text>
+      <LiveRegion announcement={announcement} />
+
+      {hintView && activeHint && (
+        <HintSheet
+          // A new sheet (and its slide-in) for each new hint, not for each step of one.
+          key={hintKey(activeHint.hint)}
+          view={hintView}
+          mistake={activeHint.hint.kind === 'mistake'}
+          onNext={onHintNext}
+          onClose={() => setHintState(null)}
+        />
+      )}
 
       {trackerOpen && !solved && (
         <PairTracker
@@ -319,6 +383,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
           selected={selectedPair}
           onSelect={onSelectPair}
           onClose={() => setTrackerOpen(false)}
+          pips={pips}
         />
       )}
     </Screen>
@@ -327,7 +392,6 @@ function PlayScreen({ level }: { readonly level: Level }) {
 
 const styles = StyleSheet.create({
   subtitle: { flexDirection: 'row', alignItems: 'center' },
-  srOnly: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 },
   // Evenly spread up to a comfortable width, so four buttons still fit on a 320 pt screen.
   toolbar: {
     flexDirection: 'row',

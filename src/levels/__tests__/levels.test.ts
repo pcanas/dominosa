@@ -5,8 +5,19 @@
 import { describe, expect, it } from 'vitest';
 
 import { checkSolution, countSolutions, gradePuzzle } from '@/core';
+import { tutorialPlan } from '@/game/tutorial';
 
-import { DIFFICULTIES, getLevel, getPack, LEVELS, nextLevel, PACKS, parseLevel, type LevelRecord } from '..';
+import {
+  DIFFICULTIES,
+  getLevel,
+  getPack,
+  LEVELS,
+  nextLevel,
+  PACKS,
+  parseLevel,
+  TUTORIAL_LEVEL,
+  type LevelRecord,
+} from '..';
 
 describe('bundled levels', () => {
   it('has unique ids, named after their pack and position', () => {
@@ -73,6 +84,26 @@ describe('bundled levels', () => {
     expect(nextLevel(LEVELS[LEVELS.length - 1]!.id)).toBeUndefined();
     expect(getLevel('nope')).toBeUndefined();
     expect(getPack('nope')).toBeUndefined();
+  });
+});
+
+describe('tutorial board', () => {
+  const level = TUTORIAL_LEVEL;
+
+  it('has exactly one solution, the stored one, and needs singles only', () => {
+    const result = countSolutions(level.puzzle, 2);
+    expect(result.count).toBe(1);
+    expect(result.first).toEqual(level.solution);
+    expect(gradePuzzle(level.puzzle).grade).toBe(1);
+  });
+
+  it('is the smallest board, outside every pack', () => {
+    expect(level.puzzle.order).toBe(2);
+    expect(getLevel(level.id)).toBeUndefined();
+  });
+
+  it('works with the tutorial script', () => {
+    expect(tutorialPlan(level.puzzle, level.solution)).not.toBeNull();
   });
 });
 

@@ -1,8 +1,8 @@
-# Dominosa · juego completo sin adornos (hito 1)
+# Dominosa · identidad y pulido (hito 2, en curso)
 
 Puzle lógico de dominó: une cada pareja de números adyacentes con una ficha, usando cada ficha del juego exactamente una vez. Todo nivel tiene **solución única**.
 
-Jugable en el navegador, instalable en el iPhone como app web, con el motor en TypeScript que se reutilizará en la app nativa. Hitos 0 y 1 cerrados: muros y guardado, rastreador de pares y packs, accesibilidad y ajustes.
+Jugable en el navegador, instalable en el iPhone como app web, con el motor en TypeScript que se reutilizará en la app nativa. Hitos 0 y 1 cerrados: muros y guardado, rastreador de pares y packs, accesibilidad y ajustes. Del hito 2, el bloque 1 (aspecto y tacto: paleta accesible, puntos de dominó, animaciones, sonido e icono) y el bloque 2 (pistas y tutorial).
 
 - **60 niveles en 5 packs de 12**, en rampa de tamaño y profundidad de deducción: Primeros pasos (4×5 y 5×6), Fácil (5×6 y 6×7), Medio (7×8), Difícil (8×9) y Experto (9×10). Todos abiertos. Inicio → pack (rejilla de niveles con resueltos y a medias) → partida; "Siguiente" sigue en el pack y salta al siguiente al terminarlo.
 - **Rastreador de pares** (botón "Pares"): panel con todas las fichas del juego en escalera; sin colocar, colocadas (salvia) o repetidas (terracota). Tocar un par cierra el panel y marca en el tablero sus huecos libres como fichas punteadas, con el recuento arriba; se quita con la ✕ o al colocar ese par. El panel flota sobre la parte baja de la pantalla, así que el tablero nunca encoge.
@@ -10,9 +10,19 @@ Jugable en el navegador, instalable en el iPhone como app web, con el motor en T
 - **Muros** (marcar que dos celdas no pueden ir juntas): deslizar crea y tocar quita. El botón "Muro" funciona como la tecla de mayúsculas del iPhone: un toque vale para un muro (el modo se apaga al ponerlo), doble toque lo deja fijo (candado) hasta volver a tocarlo. Tocar un muro lo quita; su zona de toque es mucho mayor que la barra (hasta media celda si la celda está vacía, un cuarto si tiene ficha) y el muro se pone en terracota mientras el dedo está encima. Un muro impide colocar una ficha en ese hueco; poner un muro donde hay una ficha la quita.
 - Deshacer (hasta 500 pasos, muros incluidos), reiniciar con confirmación (borra fichas y muros), fichas repetidas en terracota con icono, verde salvia al resolver.
 - **Partidas guardadas:** cada nivel empezado se guarda en el dispositivo (fichas, muros, historial de deshacer y tiempo) y se retoma al volver, aunque se cierre la app. El reloj se para al salir del nivel, al abrir los ajustes o al pasar la app a segundo plano. En la rejilla del pack, los niveles a medias llevan un punto terracota.
-- **Ajustes** (engranaje en inicio y en la partida, guardados en el dispositivo): vibración (solo en la app nativa; en la web no aparece), mostrar el tiempo mientras juegas (apagado por defecto: modo zen; el tiempo se guarda igualmente), tema (sistema / claro / oscuro) e idioma (sistema / español / inglés / francés).
-- **Jugar con VoiceOver** (o TalkBack): con el lector de pantalla activo, cada celda es un botón; elegir una celda la selecciona y elegir una vecina coloca la ficha (o el muro, con Muro activo; si ya hay muro, lo quita). Elegir otra vez la seleccionada quita su ficha o la deselecciona. En la app nativa, cada celda tiene además acciones (deslizar arriba o abajo): unir con cada vecina, muro con cada vecina, quitar ficha. No hay opción en ajustes: el modo sigue al sistema y sin lector de pantalla el juego no cambia. Solo existe en la app nativa (Expo Go o la app instalada): un navegador no deja saber si hay un lector de pantalla activo, así que en la web el tablero se lee pero no se juega con VoiceOver.
+- **Ajustes** (engranaje en inicio y en la partida, guardados en el dispositivo): sonido, vibración (solo en la app nativa; en la web no aparece), mostrar el tiempo mientras juegas (apagado por defecto: modo zen; el tiempo se guarda igualmente), pistas (activadas por defecto), números o puntos, tema (sistema / claro / oscuro) e idioma (sistema / español / inglés / francés).
+- **Jugar con VoiceOver** (o TalkBack): con el lector de pantalla activo, cada celda es un botón; elegir una celda la selecciona y elegir una vecina coloca la ficha (o el muro, con Muro activo; si ya hay muro, lo quita). El botón Muro tiene la acción "Fijar" / "Soltar" (con VoiceOver, el doble toque ya es la activación). Elegir otra vez la seleccionada quita su ficha o la deselecciona. En la app nativa, cada celda tiene además acciones (deslizar arriba o abajo): unir con cada vecina, muro con cada vecina, quitar ficha. No hay opción en ajustes: el modo sigue al sistema y sin lector de pantalla el juego no cambia. Solo existe en la app nativa (Expo Go o la app instalada): un navegador no deja saber si hay un lector de pantalla activo, así que en la web el tablero se lee pero no se juega con VoiceOver.
 - **Accesibilidad:** cada celda dice fila, columna, número, su ficha y hacia dónde, si está repetida, sus muros y si está seleccionada. Tras cada jugada se avisa de lo que ha pasado (ficha colocada o repetida, muro puesto o quitado, resuelto con el tiempo). Los botones Muro y Pares y los pares del rastreador dicen su estado (también en la web). Los pares repetidos llevan "×2", no solo color. Respeta "Reducir movimiento" y aguanta el texto grande.
+- **Aspecto y tacto (hito 2, bloque 1):**
+  - **Sonido** (activado por defecto): clac al colocar, tic al quitar, golpe suave al poner un muro y un acorde de marimba al resolver. En el iPhone respeta el interruptor de silencio y no corta la música de otras apps (también en la web, con Web Audio). Los sonidos se generan con `npm run sounds` (síntesis, sin grabaciones ni licencias); se pueden cambiar por grabaciones dejando WAV con el mismo nombre en `assets/sounds/`.
+  - **Animaciones:** las fichas y los muros que se quitan (a mano, al deshacer, al reemplazar o al reiniciar) se desvanecen en vez de desaparecer; al resolver, las fichas pasan a salvia en una ola que sale de la última ficha, y aparece una tarjeta con el tiempo (y "Nuevo récord" o el mejor tiempo si ya lo habías resuelto). Con "Reducir movimiento" todo va directo al estado final.
+  - **Números o puntos** (ajustes → Tablero): los valores se pueden ver como puntos de dominó, en el tablero y en el rastreador. Llegan hasta el 6, así que Difícil (8×9) y Experto (9×10) siguen con números. VoiceOver sigue diciendo números.
+  - **Paleta v2:** el borde de las fichas, la terracota y la salvia llegan a 3:1 contra el tablero y las celdas (antes 1,7:1, 2,4:1 y 1,9:1), y la terracota y la salvia a 4,5:1 cuando son texto. Lo comprueban los tests de paleta y de fichas.
+  - **Icono:** la última ficha de un tablero casi resuelto, un 3|5 a punto de caer en su hueco (sirve para cualquier nombre). `npm run icons` genera todos los tamaños desde `scripts/icon-art.ts`: iOS (normal; oscuro, con el tablero de noche; y tintado, en grises), Android adaptativo (el tablero detrás y la ficha delante) y monocromo, splash y favicon (la ficha sola) y PWA.
+- **Pistas y tutorial (hito 2, bloque 2):**
+  - **Pistas** (botón "Pista", gratis e ilimitadas): el primer toque dice dónde mirar (las celdas laten), "¿Por qué?" explica el razonamiento con sus números y "Hazlo" hace la jugada (se deshace en un paso). Si hay algún error en el tablero, eso va primero: "Hay un error", "¿Dónde?" lo señala y "Quítala" / "Quítalo" lo quita. Parten siempre de tu tablero, con la técnica más sencilla que avance (las mismas del graduador), y nunca enseñan la solución de golpe. Cualquier jugada cierra la pista. Quien no quiera ninguna las quita en Ajustes → Juego → Pistas: desaparece el botón de la partida (el tutorial las sigue enseñando).
+  - **Sin pistas:** resolver un nivel sin pedir ninguna le pone una estrella en la rejilla del pack, y la tarjeta de resuelto lo dice. Las pistas cuentan por intento: se guardan con la partida a medias y reiniciar no las borra; "Repetir" un nivel resuelto empieza de cero. La estrella, una vez ganada, se queda. Los niveles resueltos antes de esta versión cuentan como sin pistas.
+  - **Bienvenida y tutorial "Cómo se juega":** la primera vez que se abre la app sale una pantalla de bienvenida con el icono, el nombre, "Aprende a jugar" y "Ya sé jugar" (al inicio). El tutorial es un tablero propio de 3×4 en cinco pasos, siempre los mismos: colocar una ficha, quitar la repetida que pone el tutorial, poner un muro (y saber que se quita tocándolo), pedir una pista y terminar el tablero solo. Cada paso solo acepta su jugada y, si no, dice qué hacer. Al final, "¡Vamos a jugar!" lleva al primer nivel (y atrás quedan su pack y el inicio); "Saltar" vuelve al inicio. Cuenta como visto al terminarlo, al saltarlo o con "Ya sé jugar" (si se cierra la app antes, vuelve a salir), y quien ya tenía progreso no lo ve. Se repite desde el "?" de inicio. Con VoiceOver, los pasos se explican eligiendo celdas.
 - Progreso y mejor tiempo guardados en el dispositivo. Modo oscuro cálido.
 - La pantalla de inicio muestra la versión y el commit del build, para saber si la app ya se actualizó (la PWA coge la versión nueva al cerrarla y volver a abrirla).
 - Funciona sin conexión una vez abierta (service worker).
@@ -62,6 +72,8 @@ npm run web          # servidor de desarrollo en el navegador
 npm start            # Metro + QR para Expo Go
 npm run check        # typecheck + lint + formato + tests (lo mismo que CI)
 npm run levels       # regenera los packs de niveles (determinista)
+npm run sounds       # regenera los sonidos en assets/sounds/ (determinista)
+npm run icons        # regenera iconos, splash, favicon y PWA desde scripts/icon-art.ts
 npm run build:web    # export estático + PWA en dist/
 ```
 
@@ -77,18 +89,25 @@ src/
              generador, deducción lógica y graduador. Corre en app, Node y tests.
   levels/    Formato de los packs (JSON compacto), parseo y catálogo.
   game/      Reglas de una partida: reducer puro (colocar, reemplazar, quitar,
-             muros, deshacer por diffs, reiniciar), selectores, progreso y
-             guardado/restauración validada de partidas.
-  state/     Stores de Zustand (partida actual; partidas guardadas, progreso y
-             ajustes persistidos).
-  platform/  Adaptadores: almacenamiento, vibración, lector de pantalla (detección
-             y avisos), service worker, hidratación web.
+             muros, deshacer por diffs, reiniciar), selectores, progreso,
+             guardado/restauración validada de partidas, pistas (errores primero,
+             luego el siguiente paso lógico desde tu tablero) y guion del tutorial.
+  state/     Stores de Zustand (partida actual; partidas guardadas, progreso,
+             ajustes y tutorial visto, persistidos).
+  platform/  Adaptadores: almacenamiento, vibración, sonido (expo-audio; Web Audio
+             en la web), lector de pantalla (detección y avisos), service worker,
+             hidratación web.
   i18n/      Textos ES/EN/FR tipados.
-  ui/        Tema (paleta del plan), componentes, tablero, gestos, accesibilidad
-             del tablero (descripciones, acciones y avisos por celda) y piezas de
-             la pantalla de juego (línea de estado, reloj).
-  app/       Rutas de Expo Router (inicio, /pack/[packId], /play/[levelId] y /settings).
-scripts/     Pipeline de niveles (Node) y post-proceso PWA.
+  ui/        Tema (paleta v2 y contraste), componentes, tablero (fichas, puntos,
+             ola al resolver), gestos (Gesture Handler 3 con hooks), accesibilidad
+             del tablero (descripciones, acciones y avisos por celda), piezas de
+             la pantalla de juego (línea de estado, tarjeta de resuelto, reloj,
+             hoja de la pista) y el entrenador del tutorial.
+  app/       Rutas de Expo Router (inicio, /pack/[packId], /play/[levelId],
+             /welcome (bienvenida del primer arranque), /learn (su tutorial),
+             /tutorial y /settings).
+scripts/     Pipeline de niveles (Node), sonidos e iconos, y post-proceso PWA.
+assets/      Iconos y splash (generados), sonidos (generados) y el SVG del icono.
 ```
 
 Reglas que el lint hace cumplir: `core/` no importa nada de fuera (ni `Math.random`: todo va con semilla), y `core/`, `game/` y `levels/` no importan React, React Native, Expo ni stores. Así el motor y las reglas se reutilizan tal cual en el script de generación, los tests y la app nativa.
@@ -96,10 +115,11 @@ Reglas que el lint hace cumplir: `core/` no importa nada de fuera (ni `Math.rand
 ### Generación y graduación de niveles
 
 - **Generador:** reparte el juego completo sobre un teselado aleatorio y hace escalada (intercambia o gira fichas y acepta el cambio si el número de soluciones, con tope de 40, no sube) hasta que la solución plantada es la única. Unos pocos ms por puzle, incluso en 10×11.
-- **Graduador:** resuelve como una persona, usando siempre la técnica más sencilla que avance. Nivel 1: singles (celda con una sola pareja posible, ficha con un solo hueco). Nivel 2: huecos de una ficha que comparten celda y colocaciones que dejan sin opciones a una celda vecina u otra ficha. Nivel 3: lookahead de un paso (suponer y seguir los singles hasta contradicción). Cada paso es un `Deduction`, la misma unidad que usarán las pistas graduadas.
+- **Graduador:** resuelve como una persona, usando siempre la técnica más sencilla que avance. Nivel 1: singles (celda con una sola pareja posible, ficha con un solo hueco). Nivel 2: huecos de una ficha que comparten celda y colocaciones que dejan sin opciones a una celda vecina u otra ficha. Nivel 3: lookahead de un paso (suponer y seguir los singles hasta contradicción). Cada paso es un `Deduction`, la misma unidad que usan las pistas.
 - Los niveles se generan offline (`npm run levels`) desde `scripts/level-packs.ts` y se guardan en `src/levels/packs/*.json` (~300 bytes por nivel). Cada pack se describe por grupos (tamaño, grado, cuántos); dentro de un grupo se ordenan de menos a más pasos de deducción, y ningún puzle se repite en todo el juego.
 - **Los ids de nivel son permanentes** (`<pack>-<nn>`, p. ej. `medium-07`): de ellos cuelgan el progreso y las partidas guardadas. No se renombra ni se reordena un pack publicado; se añade uno nuevo.
 - Un test comprueba en CI que cada nivel tiene exactamente una solución, que coincide con la guardada, que su grado es el declarado, que no hay puzles repetidos y que la dificultad sube dentro de cada pack.
+- El tablero del tutorial (`src/levels/tutorial.json`) sale del mismo generador (`npm run levels -- tutorial`), con la condición de que su guion funcione: una ficha de la solución cuyos números estén juntos en otro sitio y una pista que coloque ficha después del muro.
 
 ## Qué validar
 
@@ -111,6 +131,15 @@ Reglas que el lint hace cumplir: `core/` no importa nada de fuera (ni `Math.rand
 - **Curva:** ¿cada pack se siente un poco más difícil que el anterior?
 - **VoiceOver** (en Expo Go, con VoiceOver activo): ¿se resuelve un nivel solo eligiendo celdas? ¿Los avisos y las descripciones de celda se entienden y no se pisan?
 
+- **Sonido:** ¿suena bien en el altavoz del iPhone? ¿Algún sonido molesta al repetirse? ¿Se calla con el interruptor de silencio y deja sonar la música?
+- **Animaciones:** ¿la ola al resolver y la tarjeta se sienten bien, ni lentas ni bruscas? ¿Las fichas que se quitan se desvanecen sin estorbar?
+- **Puntos:** ¿se leen bien en 7×8 (pack Medio) y en el rastreador?
+- **Icono:** añade la PWA a la pantalla de inicio: ¿se reconoce entre otras apps?
+
+- **Pistas:** ¿"dónde mirar" basta muchas veces, o siempre hace falta el "¿Por qué?"? ¿Las explicaciones se entienden sin saber nada de técnicas? En Difícil y Experto, ¿alguna pista se siente mágica en vez de lógica?
+- **Estrella sin pistas:** ¿motiva a intentarlo sin pistas, o da igual?
+- **Tutorial:** pásaselo a alguien que no haya jugado nunca, sin explicarle nada: ¿llega al final? ¿En qué paso duda? ¿"Saltar" se ve? (Sale solo al abrir la app sin progreso: en la PWA, ventana privada; en Expo Go, borrando los datos de la app.)
+
 ## Siguiente (hito 2)
 
-Identidad y pulido: icono, animaciones, sonido, tutorial y pistas básicas. Beta en TestFlight y prueba cerrada de Google Play en paralelo.
+Bloque 3: app propia (development build con EAS), beta en TestFlight y prueba cerrada de Google Play.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { afterWallDrawn, DOUBLE_TAP_MS, tapWallButton, WALL_BUTTON_OFF } from '../wall-mode';
+import { afterWallDrawn, DOUBLE_TAP_MS, tapWallButton, toggleWallLock, WALL_BUTTON_OFF } from '../wall-mode';
 
 const taps = (...times: number[]) => times.reduce(tapWallButton, WALL_BUTTON_OFF).mode;
 
@@ -29,5 +29,14 @@ describe('wall button', () => {
   it('does not lock when the double tap comes after the wall was drawn', () => {
     const drawn = afterWallDrawn(tapWallButton(WALL_BUTTON_OFF, 1_000));
     expect(tapWallButton(drawn, 1_200).mode).toBe('once');
+  });
+
+  it('locks and unlocks from the screen reader action, whatever the mode', () => {
+    expect(toggleWallLock(WALL_BUTTON_OFF, 1_000).mode).toBe('locked');
+    expect(toggleWallLock(tapWallButton(WALL_BUTTON_OFF, 1_000), 1_100).mode).toBe('locked');
+    const locked = toggleWallLock(WALL_BUTTON_OFF, 1_000);
+    expect(toggleWallLock(locked, 9_000).mode).toBe('off');
+    // A tap on the button right after still behaves like a first tap, not a double tap.
+    expect(tapWallButton(toggleWallLock(locked, 9_000), 9_100).mode).toBe('once');
   });
 });

@@ -49,6 +49,12 @@ export type GameAction =
   | { readonly type: 'addWall'; readonly a: CellIndex; readonly b: CellIndex }
   /** Erase the wall between two adjacent cells. */
   | { readonly type: 'removeWall'; readonly a: CellIndex; readonly b: CellIndex }
+  /**
+   * Mark several walls at once, as one step to undo (a hint ruling out several
+   * slots). A domino lying on one of them is removed; pairs that are not
+   * adjacent are skipped.
+   */
+  | { readonly type: 'addWalls'; readonly pairs: readonly Pair[] }
   | { readonly type: 'undo' }
   | { readonly type: 'reset' };
 
@@ -134,6 +140,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const walls = [...state.walls];
       walls[edge] = false;
       return commit(state, state.partner, walls);
+    }
+    case 'addWalls': {
+      const walls = [...state.walls];
+      const next = [...state.partner];
+      for (const { a, b } of action.pairs) {
+        const edge = edgeOf(state, a, b);
+        if (edge < 0) continue;
+        walls[edge] = true;
+        if (next[a] === b) {
+          next[a] = -1;
+          next[b] = -1;
+        }
+      }
+      return commit(state, next, walls);
     }
     case 'undo': {
       const change = state.past[state.past.length - 1];

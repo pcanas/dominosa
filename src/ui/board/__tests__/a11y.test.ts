@@ -69,6 +69,15 @@ describe('announcementFor', () => {
     expect(announcementFor({ type: 'undo' }, 'removed', play(), t, '')).toBe('Deshecho');
     expect(announcementFor({ type: 'reset' }, 'removed', play(), t, '')).toBe('Tablero vacío');
     expect(announcementFor({ type: 'addWall', a: 0, b: 1 }, 'wallAdded', play(), t, '')).toBe('Muro puesto');
+    const walls = (n: number): GameAction => ({
+      type: 'addWalls',
+      pairs: [
+        { a: 0, b: 1 },
+        { a: 2, b: 3 },
+      ].slice(0, n),
+    });
+    expect(announcementFor(walls(1), 'wallAdded', play(), t, '')).toBe('Muro puesto');
+    expect(announcementFor(walls(2), 'wallAdded', play(), t, '')).toBe('2 muros puestos');
     expect(announcementFor(place(0, 1), 'blocked', play(), t, '')).toBe('Hay un muro entre esas celdas');
     expect(announcementFor(place(0, 1), 'solved', play(), t, '¡Resuelto!')).toBe('¡Resuelto!');
     expect(announcementFor(place(0, 1), 'unchanged', play(), t, '')).toBeNull();

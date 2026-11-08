@@ -13,9 +13,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 import { encodeCells, encodeSolution, generatePuzzle, gradePuzzle, type GradeResult } from '@/core';
+import { tutorialPlan } from '@/game/tutorial';
 import type { LevelPackFile, LevelRecord } from '@/levels/types';
 
-import { PACKS, type LevelGroup, type PackSpec } from './level-packs';
+import { PACKS, TUTORIAL, type LevelGroup, type PackSpec } from './level-packs';
 
 const MAX_SEEDS = 2_000;
 const HARDEST_POOL = 3;
@@ -109,10 +110,50 @@ function generatePack(pack: PackSpec, used: Set<string>): void {
   );
 }
 
+/** At least two dominoes each way, so the tutorial board looks like a real one rather than a pattern. */
+function mixed(solution: readonly number[], cols: number): boolean {
+  let across = 0;
+  let down = 0;
+  solution.forEach((b, a) => {
+    if (b === a + 1) across++;
+    else if (b === a + cols) down++;
+  });
+  return across >= 2 && down >= 2;
+}
+
+/** The tutorial's board: the first seed with the right depth, mixed dominoes, and a script that works on it. */
+function generateTutorial(): void {
+  for (let k = 0; k < MAX_SEEDS; k++) {
+    const seed = `${TUTORIAL.id}/${k}`;
+    const { puzzle, solution } = generatePuzzle({ order: TUTORIAL.order, seed });
+    if (gradePuzzle(puzzle).grade !== TUTORIAL.grade || !mixed(solution, puzzle.cols)) continue;
+    if (!tutorialPlan(puzzle, solution)) continue;
+    const level: LevelRecord = {
+      id: `${TUTORIAL.id}-01`,
+      difficulty: TUTORIAL.difficulty,
+      order: TUTORIAL.order,
+      rows: puzzle.rows,
+      cols: puzzle.cols,
+      grade: TUTORIAL.grade,
+      cells: encodeCells(puzzle.cells),
+      solution: encodeSolution(solution, puzzle.cols),
+      seed,
+    };
+    const file: LevelPackFile = { id: TUTORIAL.id, formatVersion: 1, levels: [level] };
+    const output = resolve(process.cwd(), TUTORIAL.output);
+    mkdirSync(dirname(output), { recursive: true });
+    writeFileSync(output, `${JSON.stringify(file, null, 2)}\n`);
+    console.log(`✓ ${TUTORIAL.id}: ${puzzle.cols}×${puzzle.rows}, seed ${seed} → ${TUTORIAL.output}`);
+    return;
+  }
+  throw new Error(`No tutorial board in ${MAX_SEEDS} seeds`);
+}
+
 const requested = process.argv.slice(2);
-const unknown = requested.filter((id) => !PACKS.some((p) => p.id === id));
+const known = [...PACKS.map((p) => p.id), TUTORIAL.id];
+const unknown = requested.filter((id) => !known.includes(id));
 if (unknown.length > 0) {
-  console.error(`Unknown pack(s): ${unknown.join(', ')}. Known: ${PACKS.map((p) => p.id).join(', ')}`);
+  console.error(`Unknown pack(s): ${unknown.join(', ')}. Known: ${known.join(', ')}`);
   process.exit(1);
 }
 
@@ -125,3 +166,5 @@ for (const pack of PACKS) {
   if (write) generatePack(pack, used);
   else for (const [index, group] of pack.groups.entries()) findGroup(pack, index, group, used);
 }
+// Its own order, so it never collides with a pack's board.
+if (requested.length === 0 || requested.includes(TUTORIAL.id)) generateTutorial();

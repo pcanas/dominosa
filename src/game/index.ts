@@ -15,7 +15,14 @@ export {
   type GameState,
   type PlacedTile,
 } from './game';
-export { recordSolve, type LevelProgress, type ProgressMap } from './progress';
+export { findMistakes, hintAction, hintFocus, nextHint, type Hint, type Mistake } from './hint';
+export {
+  loadProgress,
+  PROGRESS_VERSION,
+  recordSolve,
+  type LevelProgress,
+  type ProgressMap,
+} from './progress';
 export {
   decodeBoard,
   MAX_SAVED_GAMES,
@@ -27,5 +34,13 @@ export {
   type SavedGame,
   type SavedGames,
 } from './saved-game';
+export { moveOutcome, type MoveOutcome } from './outcome';
 export { boardStatus, type BoardStatus } from './status';
+export {
+  TUTORIAL_STEPS,
+  tutorialBoard,
+  tutorialPlan,
+  type TutorialPlan,
+  type TutorialStep,
+} from './tutorial';
 export { pairSlots, trackPairs, type PairSlots, type TrackedPair } from './tracker';

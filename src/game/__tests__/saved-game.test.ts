@@ -101,6 +101,18 @@ describe('saveGame / restoreGame', () => {
     expect(restoreGame(puzzle, { ...saved, elapsedMs: 'x' })?.elapsedMs).toBe(0);
     expect(restoreGame(puzzle, { ...saved, elapsedMs: -5 })?.elapsedMs).toBe(0);
   });
+
+  it('keeps the hints used, and reads games saved before hints existed as having none', () => {
+    const game = play(place(0, 2));
+    const saved = JSON.parse(JSON.stringify(saveGame(game, 0, now, 3))) as SavedGame;
+    expect(saved.hints).toBe(3);
+    expect(restoreGame(puzzle, saved)?.hints).toBe(3);
+
+    const { hints: _dropped, ...older } = saved;
+    expect(restoreGame(puzzle, older)?.hints).toBe(0);
+    expect(restoreGame(puzzle, { ...saved, hints: -1 })?.hints).toBe(0);
+    expect(restoreGame(puzzle, { ...saved, hints: 1.5 })?.hints).toBe(0);
+  });
 });
 
 describe('board encoding', () => {

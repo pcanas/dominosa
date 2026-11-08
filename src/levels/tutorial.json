@@ -1,0 +1,17 @@
+{
+  "id": "tutorial",
+  "formatVersion": 1,
+  "levels": [
+    {
+      "id": "tutorial-01",
+      "difficulty": "tutorial",
+      "order": 2,
+      "rows": 4,
+      "cols": 3,
+      "grade": 1,
+      "cells": "210002122101",
+      "solution": "RLDRLUDRLURL",
+      "seed": "tutorial/2"
+    }
+  ]
+}

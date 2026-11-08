@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } fr
 import type { DominoId } from '@/core';
 import type { TrackedPair } from '@/game';
 import { useStrings } from '@/i18n';
+import { PipFace } from '@/ui/board/PipFace';
 import { AppText } from '@/ui/components/AppText';
 import { toggleState } from '@/ui/components/IconButton';
 import { fonts, radius, spacing, useTheme } from '@/ui/theme';
@@ -16,6 +17,8 @@ interface PairTrackerProps {
   readonly selected: DominoId | null;
   readonly onSelect: (domino: DominoId) => void;
   readonly onClose: () => void;
+  /** Show pairs as domino pips, like the board. */
+  readonly pips?: boolean;
 }
 
 const GAP = 4;
@@ -23,10 +26,11 @@ const MAX_CHIP = 52;
 
 /**
  * Sheet with every pair of the set as a staircase: row `a` holds a-a … a-n.
- * Pairs still to place are plain, placed ones sage, repeated ones terracotta.
+ * Pairs still to place are plain, placed ones sage, repeated ones terracotta
+ * with a count.
  * It floats over the bottom of the screen so the board never shrinks for it.
  */
-export function PairTracker({ order, pairs, selected, onSelect, onClose }: PairTrackerProps) {
+export function PairTracker({ order, pairs, selected, onSelect, onClose, pips = false }: PairTrackerProps) {
   const { palette } = useTheme();
   const t = useStrings();
   const [width, setWidth] = useState(0);
@@ -90,6 +94,7 @@ export function PairTracker({ order, pairs, selected, onSelect, onClose }: PairT
                   height={chipHeight}
                   selected={pair.domino === selected}
                   onPress={() => onSelect(pair.domino)}
+                  pips={pips}
                 />
               ))}
             </View>
@@ -109,12 +114,14 @@ function PairChip({
   height,
   selected,
   onPress,
+  pips,
 }: {
   readonly pair: TrackedPair;
   readonly width: number;
   readonly height: number;
   readonly selected: boolean;
   readonly onPress: () => void;
+  readonly pips: boolean;
 }) {
   const { palette } = useTheme();
   const t = useStrings();
@@ -123,9 +130,22 @@ function PairChip({
     pair.placed > 1
       ? { fill: palette.accentSoft, border: palette.accent, text: palette.text }
       : pair.placed === 1
-        ? { fill: palette.successSoft, border: palette.success, text: palette.textSecondary }
+        ? // Placed pairs read as done through the sage fill; their numbers stay at full contrast.
+          { fill: palette.successSoft, border: palette.success, text: palette.text }
         : { fill: palette.tile, border: palette.tileBorder, text: palette.text };
   const fontSize = Math.max(11, Math.round(height * 0.45));
+  // Each half of the chip, for pips.
+  const face = { width: (width - 3) / 2, height: height - 2 };
+  const half = (value: number) =>
+    pips ? (
+      <PipFace value={value} style={face} color={tone.text} scale={0.95} />
+    ) : (
+      <AppText
+        allowFontScaling={false}
+        style={[styles.chipText, { fontSize, lineHeight: height - 4, color: tone.text }]}>
+        {value}
+      </AppText>
+    );
 
   return (
     <Pressable
@@ -147,17 +167,9 @@ function PairChip({
           borderWidth: selected ? 2 : 1,
         },
       ]}>
-      <AppText
-        allowFontScaling={false}
-        style={[styles.chipText, { fontSize, lineHeight: height - 4, color: tone.text }]}>
-        {lo}
-      </AppText>
+      {half(lo)}
       <View style={[styles.chipDivider, { backgroundColor: tone.border }]} />
-      <AppText
-        allowFontScaling={false}
-        style={[styles.chipText, { fontSize, lineHeight: height - 4, color: tone.text }]}>
-        {hi}
-      </AppText>
+      {half(hi)}
       {pair.placed > 1 && (
         // Repeated pairs carry a count, not only a colour.
         <View style={[styles.count, { backgroundColor: palette.accent, borderColor: palette.surface }]}>

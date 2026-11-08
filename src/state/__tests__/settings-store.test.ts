@@ -19,14 +19,47 @@ const { DEFAULT_SETTINGS, sanitizeSettings, useSettingsStore } = await import('.
 
 describe('sanitizeSettings', () => {
   it('keeps valid values and replaces the rest with defaults', () => {
+    expect(
+      sanitizeSettings({
+        sound: false,
+        vibration: false,
+        showTimer: true,
+        hints: false,
+        theme: 'dark',
+        language: 'fr',
+        numberStyle: 'pips',
+      }),
+    ).toEqual({
+      sound: false,
+      vibration: false,
+      showTimer: true,
+      hints: false,
+      theme: 'dark',
+      language: 'fr',
+      numberStyle: 'pips',
+    });
+    expect(
+      sanitizeSettings({
+        sound: 1,
+        vibration: 'no',
+        hints: 'never',
+        theme: 'blue',
+        language: 'de',
+        numberStyle: 'roman',
+      }),
+    ).toEqual(DEFAULT_SETTINGS);
+    expect(sanitizeSettings(null)).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('turns sound and hints on and keeps digits for settings saved before they existed', () => {
     expect(sanitizeSettings({ vibration: false, showTimer: true, theme: 'dark', language: 'fr' })).toEqual({
+      ...DEFAULT_SETTINGS,
       vibration: false,
       showTimer: true,
       theme: 'dark',
       language: 'fr',
     });
-    expect(sanitizeSettings({ vibration: 'no', theme: 'blue', language: 'de' })).toEqual(DEFAULT_SETTINGS);
-    expect(sanitizeSettings(null)).toEqual(DEFAULT_SETTINGS);
+    expect(DEFAULT_SETTINGS).toMatchObject({ sound: true, hints: true, numberStyle: 'digits' });
   });
 });
 

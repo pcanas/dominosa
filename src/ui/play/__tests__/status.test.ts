@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { formatDuration } from '@/i18n/format';
 import { STRINGS } from '@/i18n/strings';
 
-import { describeStatus, pairStatus, type StatusInput } from '../status';
+import { describeSolve, describeStatus, pairStatus, type StatusInput } from '../status';
 
 const t = STRINGS.es;
 const base: StatusInput = {
@@ -52,6 +52,42 @@ describe('pairStatus', () => {
     expect(pairStatus({ label: '2–3', slots: { placed: [], open: [slot, slot] } }, t).text).toBe(
       t.status.pairOpen('2–3', 2),
     );
+  });
+});
+
+describe('describeSolve', () => {
+  it('shows the time, and only the time on a first solve with hints', () => {
+    expect(describeSolve(83_000, null, 2, t)).toEqual({
+      title: '¡Resuelto en 1:23!',
+      detail: null,
+      newBest: false,
+      perfect: false,
+    });
+  });
+
+  it('celebrates a new best time', () => {
+    expect(describeSolve(61_000, 83_000, 1, t)).toEqual({
+      title: '¡Resuelto en 1:01!',
+      detail: 'Nuevo récord',
+      newBest: true,
+      perfect: false,
+    });
+  });
+
+  it('otherwise reminds of the best time', () => {
+    expect(describeSolve(95_000, 83_000, 1, t)).toMatchObject({
+      detail: 'Tu mejor tiempo: 1:23',
+      newBest: false,
+    });
+  });
+
+  it('says when no hints were used', () => {
+    expect(describeSolve(83_000, null, 0, t)).toMatchObject({ detail: 'Sin pistas', perfect: true });
+    expect(describeSolve(61_000, 83_000, 0, t)).toMatchObject({
+      detail: 'Nuevo récord · Sin pistas',
+      newBest: true,
+      perfect: true,
+    });
   });
 });
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -9,12 +9,22 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { DIRECTIONS, makePair, neighbourOf, type CellIndex, type Pair, type Puzzle } from '@/core';
 import type { GameAction, PairSlots, PlacedTile } from '@/game';
 import { fonts, radius, useTheme } from '@/ui/theme';
 
 import type { CellAction } from './a11y';
+import { waveDelay } from './celebration';
 import {
   cellRect,
   computeMetrics,
@@ -25,6 +35,8 @@ import {
   type BoardMetrics,
   type Rect,
 } from './geometry';
+import type { HintMarks } from './hint-marks';
+import { PipFace } from './PipFace';
 import { Tile } from './Tile';
 import { useBoardGesture, type BoardTool, type DragState } from './useBoardGesture';
 
@@ -42,6 +54,15 @@ interface BoardProps {
   readonly highlight?: PairSlots | null;
   /** What each cell says to screen readers (see `describeCells`). */
   readonly descriptions: readonly string[];
+  /** Draw values as domino pips instead of digits (only for boards up to 6, see `canShowPips`). */
+  readonly pips?: boolean;
+  /** Cell of the domino that solved the board: the solve wave spreads out from it. */
+  readonly celebrateFrom?: CellIndex | null;
+  /**
+   * The hint on screen: cells that pulse, walls it would draw (faint) and a wall it
+   * points at as a mistake (terracotta). Its domino slot and a wrong domino come through `highlight`.
+   */
+  readonly hint?: HintMarks | null;
   /**
    * Set while a screen reader is on: swipes are off and cells become buttons
    * that are picked one by one (see `pickCell`), with VoiceOver actions.
@@ -58,7 +79,8 @@ export interface ScreenReaderBoard {
 /**
  * The playing board. Fills the space it is given and sizes cells to fit.
  * Layers, bottom to top: frame → cells → dominoes → walls → drag previews → numbers → the
- * transparent cells screen readers use.
+ * transparent cells screen readers use. The last two also carry a z-index: on the web, a domino
+ * fading out is redrawn at the end of the board, and would otherwise cover the numbers.
  */
 export function Board({
   puzzle,
@@ -69,6 +91,9 @@ export function Board({
   onAction,
   highlight = null,
   descriptions,
+  pips = false,
+  celebrateFrom = null,
+  hint = null,
   screenReader = null,
 }: BoardProps) {
   const { palette } = useTheme();
@@ -95,6 +120,7 @@ export function Board({
       metrics && tapTargetAt(metrics, x, y, { hasWall: walled, isCovered: (cell) => coveredCells.has(cell) }),
   });
   const pressedWall = drag?.press?.kind === 'wall' ? pairKey(drag.press) : null;
+  const wrongWall = hint?.wrongWall ? pairKey(hint.wrongWall) : null;
   const highlightedKeys = new Set(highlight?.placed.map(pairKey) ?? []);
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -142,9 +168,9 @@ export function Board({
           {!solved &&
             highlight?.open.map((slot) => (
               <Tile
-                key={`hint-${slot.a}-${slot.b}`}
+                key={`slot-${slot.a}-${slot.b}`}
                 rect={pairRect(metrics, slot.a, slot.b)}
-                variant="hint"
+                variant="slot"
                 cell={metrics.cell}
               />
             ))}
@@ -163,6 +189,9 @@ export function Board({
                       : 'placed'
               }
               cell={metrics.cell}
+              celebrateDelay={
+                solved && celebrateFrom !== null ? waveDelay(tile, celebrateFrom, puzzle.cols) : 0
+              }
             />
           ))}
 
@@ -172,11 +201,36 @@ export function Board({
                 key={`wall-${wall.a}-${wall.b}`}
                 metrics={metrics}
                 pair={wall}
-                // A finger resting on a wall shows it will be removed when lifted.
-                pressed={pairKey(wall) === pressedWall}
-                opacity={1}
+                // A finger resting on a wall shows it will be removed when lifted; a hint shows a wrong one.
+                pressed={pairKey(wall) === pressedWall || pairKey(wall) === wrongWall}
+                animate
               />
             ))}
+
+          {!solved &&
+            hint?.cells.map((cell) => (
+              <HintRing
+                key={`hint-${cell}`}
+                cellBox={cellBoxes[cell]!}
+                radius={cellRadius}
+                color={palette.accent}
+                pulse={hint.pulse}
+              />
+            ))}
+
+          {/* Walls a hint would draw, over its rings so they read clearly. */}
+          {!solved &&
+            hint?.walls
+              .filter((pair) => !walled(pair.a, pair.b))
+              .map((pair) => (
+                <WallBar
+                  key={`wall-hint-${pair.a}-${pair.b}`}
+                  metrics={metrics}
+                  pair={pair}
+                  pressed
+                  opacity={0.9}
+                />
+              ))}
 
           {screenReader?.selected != null && (
             <SelectionRing
@@ -208,24 +262,33 @@ export function Board({
                 />
               ))}
 
-          {/* Numbers are part of each cell's description, so the layer is hidden from screen readers. */}
-          <View pointerEvents="none" aria-hidden style={StyleSheet.absoluteFill}>
-            {puzzle.cells.map((pip, i) => (
-              <Text
-                key={`pip-${i}`}
-                allowFontScaling={false}
-                style={[
-                  styles.pip,
-                  cellBoxes[i],
-                  {
-                    lineHeight: cellBoxes[i]!.height,
-                    fontSize: Math.round(metrics.cell * 0.5),
-                    color: palette.text,
-                  },
-                ]}>
-                {pip}
-              </Text>
-            ))}
+          {/* Values are part of each cell's description, so the layer is hidden from screen readers. */}
+          <View pointerEvents="none" aria-hidden style={styles.values}>
+            {puzzle.cells.map((value, i) =>
+              pips ? (
+                <PipFace
+                  key={`pip-${i}`}
+                  value={value}
+                  style={{ position: 'absolute', ...cellBoxes[i]! }}
+                  color={palette.text}
+                />
+              ) : (
+                <Text
+                  key={`pip-${i}`}
+                  allowFontScaling={false}
+                  style={[
+                    styles.pip,
+                    cellBoxes[i],
+                    {
+                      lineHeight: cellBoxes[i]!.height,
+                      fontSize: Math.round(metrics.cell * 0.5),
+                      color: palette.text,
+                    },
+                  ]}>
+                  {value}
+                </Text>
+              ),
+            )}
           </View>
 
           <CellTargets
@@ -295,28 +358,86 @@ function CellTargets({
   });
 }
 
+/** Walls fade in and out; previews follow the finger without animating. */
+const WALL_IN = FadeIn.duration(140);
+const WALL_OUT = FadeOut.duration(140);
+
 function WallBar({
   metrics,
   pair,
-  opacity,
+  opacity = 1,
   pressed = false,
+  animate = false,
 }: {
   readonly metrics: BoardMetrics;
   readonly pair: Pair;
-  readonly opacity: number;
+  /** Previews are see-through. */
+  readonly opacity?: number;
   /** Terracotta while a resting finger would remove it. */
   readonly pressed?: boolean;
+  /** A wall on the board (not a preview): fades in when drawn and out when removed. */
+  readonly animate?: boolean;
 }) {
   const { palette } = useTheme();
   const thickness = wallThickness(metrics);
   return (
-    <View
+    <Animated.View
       pointerEvents="none"
       aria-hidden
+      entering={animate ? WALL_IN : undefined}
+      exiting={animate ? WALL_OUT : undefined}
       style={[
         styles.wall,
         box(wallRect(metrics, pair.a, pair.b, thickness)),
-        { borderRadius: thickness / 2, backgroundColor: pressed ? palette.accent : palette.wall, opacity },
+        { borderRadius: thickness / 2, backgroundColor: pressed ? palette.accent : palette.wall },
+        // The fade owns the opacity of a wall on the board; previews set their own.
+        !animate && { opacity },
+      ]}
+    />
+  );
+}
+
+/**
+ * Pulsing ring around a cell a hint points at. The pulse ends bright, so with
+ * "Reduce motion" on (Reanimated skips the animation) the ring simply stays.
+ */
+function HintRing({
+  cellBox,
+  radius: cellRadius,
+  color,
+  pulse,
+}: {
+  readonly cellBox: Box;
+  readonly radius: number;
+  readonly color: string;
+  /** Pulse (where to look), or settle faint (while the hint explains). */
+  readonly pulse: boolean;
+}) {
+  const opacity = useSharedValue(1);
+  useEffect(() => {
+    opacity.set(
+      pulse
+        ? withRepeat(withSequence(withTiming(0.3, { duration: 650 }), withTiming(1, { duration: 650 })), -1)
+        : withTiming(0.45, { duration: 200 }),
+    );
+  }, [opacity, pulse]);
+  const animated = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  const out = 4;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      aria-hidden
+      style={[
+        styles.hintRing,
+        {
+          left: cellBox.left - out,
+          top: cellBox.top - out,
+          width: cellBox.width + 2 * out,
+          height: cellBox.height + 2 * out,
+          borderRadius: cellRadius + out,
+          borderColor: color,
+        },
+        animated,
       ]}
     />
   );
@@ -383,9 +504,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: { borderRadius: radius.lg },
   cell: { position: 'absolute', borderWidth: 1 },
-  target: { position: 'absolute' },
+  values: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 2 },
+  target: { position: 'absolute', zIndex: 3 },
   wall: { position: 'absolute' },
   ring: { position: 'absolute', borderWidth: 3 },
+  hintRing: { position: 'absolute', borderWidth: 3 },
   pip: {
     position: 'absolute',
     textAlign: 'center',

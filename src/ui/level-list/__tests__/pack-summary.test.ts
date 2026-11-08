@@ -11,8 +11,8 @@ describe('packSummary', () => {
 
   it('counts solved and in-progress levels and lists the board sizes', () => {
     const progress = {
-      [first!.id]: { bestMs: 1, timesSolved: 1, firstSolvedAt: '2026-09-28T00:00:00Z' },
-      'other-01': { bestMs: 1, timesSolved: 1, firstSolvedAt: '2026-09-28T00:00:00Z' },
+      [first!.id]: { bestMs: 1, timesSolved: 1, firstSolvedAt: '2026-09-28T00:00:00Z', perfect: true },
+      'other-01': { bestMs: 1, timesSolved: 1, firstSolvedAt: '2026-09-28T00:00:00Z', perfect: false },
     };
     const saved = { [second!.id]: {} as SavedGame, [third!.id]: {} as SavedGame };
     expect(packSummary(intro, progress, saved)).toEqual({
