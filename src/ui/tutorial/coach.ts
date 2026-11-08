@@ -4,14 +4,12 @@
  * without a device. The steps themselves come from `src/game/tutorial.ts`.
  */
 import { dominoId, dominoPips, type Pair, type Puzzle } from '@/core';
-import { TUTORIAL_STEPS, type GameAction, type TutorialPlan, type TutorialStep } from '@/game';
+import type { GameAction, TutorialPlan, TutorialStep } from '@/game';
 import type { Strings } from '@/i18n/strings';
 import { NO_HINT_MARKS, type HintMarks } from '@/ui/board/hint-marks';
 
 /** A step of the tutorial, or `done` once its board is solved. */
 export type CoachStep = TutorialStep | 'done';
-
-export const TUTORIAL_STEP_COUNT = TUTORIAL_STEPS.length;
 
 const samePair = (action: { a: number; b: number }, pair: Pair) =>
   (action.a === pair.a && action.b === pair.b) || (action.a === pair.b && action.b === pair.a);
@@ -100,7 +98,7 @@ export function coachMarks(step: CoachStep, plan: TutorialPlan): HintMarks {
   }
 }
 
-/** 1-based number of a step, for "Step 2 of 5"; null once done. */
-export function stepNumber(step: CoachStep): number | null {
-  return step === 'done' ? null : TUTORIAL_STEPS.indexOf(step) + 1;
+/** 1-based number of a step among this run's `steps`, for "Step 2 of 5"; null once done. */
+export function stepNumber(step: CoachStep, steps: readonly TutorialStep[]): number | null {
+  return step === 'done' ? null : steps.indexOf(step) + 1;
 }

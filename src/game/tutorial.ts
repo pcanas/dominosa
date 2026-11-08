@@ -10,6 +10,8 @@
  *  4. hint     ask for a hint, which places the next domino;
  *  5. finish   complete the board alone.
  *
+ * With hints turned off in the settings, the hint step is left out.
+ *
  * Pure: used by the tutorial screen, by the level generator to pick a board
  * the script works on, and by the tests.
  */
@@ -29,6 +31,11 @@ export interface TutorialPlan {
 
 export type TutorialStep = 'place' | 'remove' | 'wall' | 'hint' | 'finish';
 export const TUTORIAL_STEPS: readonly TutorialStep[] = ['place', 'remove', 'wall', 'hint', 'finish'];
+
+/** The steps of one run: without hints, there is no hint step. */
+export function tutorialSteps(hints: boolean): readonly TutorialStep[] {
+  return hints ? TUTORIAL_STEPS : TUTORIAL_STEPS.filter((step) => step !== 'hint');
+}
 
 /** The script for a board, or null when it cannot be taught on it. */
 export function tutorialPlan(puzzle: Puzzle, solution: readonly CellIndex[]): TutorialPlan | null {
@@ -60,15 +67,23 @@ export function tutorialPlan(puzzle: Puzzle, solution: readonly CellIndex[]): Tu
   return null;
 }
 
-/** The board at the start of a step, as the script leaves it. */
-export function tutorialBoard(puzzle: Puzzle, plan: TutorialPlan, step: TutorialStep): GameState {
+/**
+ * The board at the start of a step, as the script leaves it. `hints: false` is a
+ * run without the hint step, so its domino is not on the last board.
+ */
+export function tutorialBoard(
+  puzzle: Puzzle,
+  plan: TutorialPlan,
+  step: TutorialStep,
+  hints = true,
+): GameState {
   let game = createGame(puzzle);
   const index = TUTORIAL_STEPS.indexOf(step);
   if (index >= 1) game = gameReducer(game, { type: 'place', ...plan.first });
   // The coach's repeated domino is on the board while the player is asked to remove it.
   if (index === 1) game = gameReducer(game, { type: 'place', ...plan.duplicate });
   if (index >= 3) game = gameReducer(game, { type: 'addWall', ...plan.duplicate });
-  if (index >= 4) game = gameReducer(game, { type: 'place', ...plan.hint });
+  if (index >= 4 && hints) game = gameReducer(game, { type: 'place', ...plan.hint });
   // No history: undo cannot take the player back across steps.
   return { ...game, past: [] };
 }

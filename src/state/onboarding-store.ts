@@ -53,9 +53,9 @@ export interface FirstRun {
 }
 
 /**
- * Whether opening a level should first show the tutorial: never seen, and the
- * player has not played yet (people who played before it existed skip it; it
- * stays one tap away under "How to play").
+ * Whether the app should open on the tutorial: never seen, and the player has
+ * not played yet (people who played before it existed skip it; it stays one tap
+ * away under "How to play").
  */
 export function needsTutorial({ loaded, tutorialSeen, progress, savedGames }: FirstRun): boolean {
   return (
@@ -63,14 +63,18 @@ export function needsTutorial({ loaded, tutorialSeen, progress, savedGames }: Fi
   );
 }
 
-/** `needsTutorial` for what is stored right now: read when a level is tapped. */
-export function tutorialDue(): boolean {
-  const onboarding = useOnboardingStore.getState();
-  const saved = useSavedGamesStore.getState();
+/** `needsTutorial` for what is stored, kept up to date: the home screen opens the tutorial with it. */
+export function useTutorialDue(): boolean {
+  const onboardingReady = useOnboardingStore((s) => s.ready);
+  const tutorialSeen = useOnboardingStore((s) => s.tutorialSeen);
+  const progressReady = useProgressStore((s) => s.ready);
+  const progress = useProgressStore((s) => s.levels);
+  const savedGamesReady = useSavedGamesStore((s) => s.ready);
+  const savedGames = useSavedGamesStore((s) => s.games);
   return needsTutorial({
-    loaded: onboarding.ready && saved.ready && useProgressStore.persist.hasHydrated(),
-    tutorialSeen: onboarding.tutorialSeen,
-    progress: useProgressStore.getState().levels,
-    savedGames: saved.games,
+    loaded: onboardingReady && progressReady && savedGamesReady,
+    tutorialSeen,
+    progress,
+    savedGames,
   });
 }

@@ -6,6 +6,8 @@ import { appStorage } from '@/platform/storage';
 
 interface ProgressStore {
   readonly levels: ProgressMap;
+  /** True once stored progress has loaded (or loading failed). */
+  readonly ready: boolean;
   /** Records a solve that took `elapsedMs` and used `hints` hints. */
   recordSolve(levelId: string, elapsedMs: number, hints?: number): void;
 }
@@ -20,6 +22,7 @@ export const useProgressStore = create<ProgressStore>()(
   persist(
     (set) => ({
       levels: {},
+      ready: false,
       recordSolve: (levelId, elapsedMs, hints = 0) =>
         set((state) => ({ levels: recordSolve(state.levels, levelId, elapsedMs, new Date(), hints) })),
     }),
@@ -37,6 +40,10 @@ export const useProgressStore = create<ProgressStore>()(
         levels: loadProgress((stored as { levels?: unknown } | undefined)?.levels, PROGRESS_VERSION),
       }),
       skipHydration: true,
+      // Runs after loading, whether it worked or not.
+      onRehydrateStorage: () => () => {
+        useProgressStore.setState({ ready: true });
+      },
     },
   ),
 );

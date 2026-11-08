@@ -40,6 +40,7 @@ export {
   TUTORIAL_STEPS,
   tutorialBoard,
   tutorialPlan,
+  tutorialSteps,
   type TutorialPlan,
   type TutorialStep,
 } from './tutorial';

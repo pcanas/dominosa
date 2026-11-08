@@ -114,6 +114,7 @@ const es = {
     sound: 'Sonido',
     vibration: 'Vibración',
     showTimer: 'Mostrar el tiempo mientras juegas',
+    hints: 'Pistas',
     board: 'Tablero',
     numberStyle: 'Números o puntos',
     numberStyles: { digits: 'Números', pips: 'Puntos' },
@@ -196,15 +197,15 @@ const es = {
     removePick: (pair: string) =>
       `Cada ficha sale una sola vez, y esta ${pair} está repetida. Elige dos veces la marcada para quitarla`,
     wall: (pair: string) =>
-      `Como la ${pair} ya está puesta, las celdas marcadas no pueden ir juntas. Toca Muro y desliza entre ellas`,
+      `Como la ${pair} ya está puesta, las celdas marcadas no pueden ir juntas. Toca Muro y desliza entre ellas. Un muro se quita tocándolo`,
     wallPick: (pair: string) =>
-      `Como la ${pair} ya está puesta, las celdas marcadas no pueden ir juntas. Toca Muro y elígelas`,
+      `Como la ${pair} ya está puesta, las celdas marcadas no pueden ir juntas. Toca Muro y elígelas. Para quitar un muro, se hace igual`,
     hint: 'Si te atascas, toca Pista: te dice dónde mirar, por qué, y si quieres lo hace por ti',
     finish: 'Ahora tú: termina el tablero. Cada ficha, una sola vez',
     good: '¡Bien!',
     done: '¡Ya sabes jugar!',
-    play: 'A jugar',
-    back: 'Volver',
+    play: '¡Vamos a jugar!',
+    back: 'Volver al inicio',
     nudgePlace: 'Prueba con las dos celdas marcadas',
     nudgeRemove: 'Toca la ficha marcada para quitarla',
     nudgeWall: 'Primero toca Muro y luego desliza entre las celdas marcadas',
@@ -212,7 +213,6 @@ const es = {
     nudgeHint: 'Toca Pista, abajo',
   },
   help: {
-    title: 'Ayuda',
     howToPlay: 'Cómo se juega',
   },
   notFound: 'Este nivel no existe.',
@@ -309,6 +309,7 @@ const en: Strings = {
     sound: 'Sound',
     vibration: 'Vibration',
     showTimer: 'Show the time while playing',
+    hints: 'Hints',
     board: 'Board',
     numberStyle: 'Numbers or dots',
     numberStyles: { digits: 'Numbers', pips: 'Dots' },
@@ -380,15 +381,15 @@ const en: Strings = {
     removePick: (pair) =>
       `Each domino appears only once, and this ${pair} is repeated. Pick the marked one twice to remove it`,
     wall: (pair) =>
-      `The ${pair} is already placed, so the marked cells cannot pair up. Tap Wall and swipe between them`,
+      `The ${pair} is already placed, so the marked cells cannot pair up. Tap Wall and swipe between them. Tap a wall to remove it`,
     wallPick: (pair) =>
-      `The ${pair} is already placed, so the marked cells cannot pair up. Tap Wall and pick them`,
+      `The ${pair} is already placed, so the marked cells cannot pair up. Tap Wall and pick them. To remove a wall, do the same again`,
     hint: 'If you get stuck, tap Hint: it tells you where to look, why, and can make the move for you',
     finish: 'Your turn: finish the board. Each domino, just once',
     good: 'Nice!',
     done: 'You know how to play!',
-    play: 'Let’s play',
-    back: 'Back',
+    play: 'Let’s play!',
+    back: 'Back to home',
     nudgePlace: 'Try the two marked cells',
     nudgeRemove: 'Tap the marked domino to remove it',
     nudgeWall: 'Tap Wall first, then swipe between the marked cells',
@@ -396,7 +397,6 @@ const en: Strings = {
     nudgeHint: 'Tap Hint, below',
   },
   help: {
-    title: 'Help',
     howToPlay: 'How to play',
   },
   notFound: 'This level does not exist.',
@@ -491,6 +491,7 @@ const fr: Strings = {
     sound: 'Son',
     vibration: 'Vibration',
     showTimer: 'Afficher le temps pendant la partie',
+    hints: 'Indices',
     board: 'Grille',
     numberStyle: 'Chiffres ou points',
     numberStyles: { digits: 'Chiffres', pips: 'Points' },
@@ -562,15 +563,15 @@ const fr: Strings = {
     removePick: (pair) =>
       `Chaque domino n’apparaît qu’une fois, et ce ${pair} est en double. Choisissez deux fois celui qui est marqué pour l’enlever`,
     wall: (pair) =>
-      `Le ${pair} est déjà posé, donc les cases marquées ne vont pas ensemble. Touchez Mur et glissez entre elles`,
+      `Le ${pair} est déjà posé, donc les cases marquées ne vont pas ensemble. Touchez Mur et glissez entre elles. Touchez un mur pour l’enlever`,
     wallPick: (pair) =>
-      `Le ${pair} est déjà posé, donc les cases marquées ne vont pas ensemble. Touchez Mur et choisissez-les`,
+      `Le ${pair} est déjà posé, donc les cases marquées ne vont pas ensemble. Touchez Mur et choisissez-les. Pour enlever un mur, refaites la même chose`,
     hint: 'Si vous bloquez, touchez Indice : il vous dit où regarder, pourquoi, et peut jouer le coup pour vous',
     finish: 'À vous : terminez la grille. Chaque domino, une seule fois',
     good: 'Bien !',
     done: 'Vous savez jouer !',
-    play: 'À vous de jouer',
-    back: 'Retour',
+    play: 'C’est parti !',
+    back: 'Retour à l’accueil',
     nudgePlace: 'Essayez avec les deux cases marquées',
     nudgeRemove: 'Touchez le domino marqué pour l’enlever',
     nudgeWall: 'Touchez d’abord Mur, puis glissez entre les cases marquées',
@@ -578,7 +579,6 @@ const fr: Strings = {
     nudgeHint: 'Touchez Indice, en bas',
   },
   help: {
-    title: 'Aide',
     howToPlay: 'Comment jouer',
   },
   notFound: 'Ce niveau n’existe pas.',

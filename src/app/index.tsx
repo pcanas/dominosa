@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
 import Head from 'expo-router/head';
+import { useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { useStrings } from '@/i18n';
 import { PACKS } from '@/levels';
 import { buildInfo } from '@/platform/build-info';
 import { useHydrated } from '@/platform/use-hydrated';
+import { useTutorialDue } from '@/state/onboarding-store';
 import { useProgressStore } from '@/state/progress-store';
 import { useSavedGamesStore } from '@/state/saved-games-store';
 import { AppText } from '@/ui/components/AppText';
@@ -15,11 +17,22 @@ import { packSummary } from '@/ui/level-list/pack-summary';
 import { PackCard } from '@/ui/level-list/PackCard';
 import { spacing } from '@/ui/theme';
 
+/** The tutorial opens by itself at most once per launch, even if it is left without finishing it. */
+let welcomeShown = false;
+
 export default function HomeScreen() {
   const t = useStrings();
   const hydrated = useHydrated();
   const progress = useProgressStore((s) => s.levels);
   const savedGames = useSavedGamesStore((s) => s.games);
+  const tutorialDue = useTutorialDue();
+
+  // The first time the app opens, the tutorial comes up over the home screen.
+  useEffect(() => {
+    if (!tutorialDue || welcomeShown) return;
+    welcomeShown = true;
+    router.push('/welcome');
+  }, [tutorialDue]);
 
   return (
     <Screen>

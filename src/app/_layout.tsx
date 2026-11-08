@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { registerServiceWorker } from '@/platform/service-worker';
@@ -18,7 +18,13 @@ void SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   const { palette, scheme } = useTheme();
-  const ready = fontsLoaded || fontError !== null;
+  // In the app, the splash screen also waits for stored data, so that on the first launch the
+  // tutorial comes straight up. The web page renders at once (it is pre-rendered without it).
+  const onboardingReady = useOnboardingStore((s) => s.ready);
+  const progressReady = useProgressStore((s) => s.ready);
+  const savedGamesReady = useSavedGamesStore((s) => s.ready);
+  const storesReady = onboardingReady && progressReady && savedGamesReady;
+  const ready = (fontsLoaded || fontError !== null) && (Platform.OS === 'web' || storesReady);
 
   useEffect(() => {
     void useProgressStore.persist.rehydrate();
@@ -43,8 +49,10 @@ export default function RootLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: palette.background },
           animation: 'fade',
-        }}
-      />
+        }}>
+        {/* The first-launch tutorial is just there, over the home screen, and only "Skip" leaves it. */}
+        <Stack.Screen name="welcome" options={{ animation: 'none', gestureEnabled: false }} />
+      </Stack>
     </GestureHandlerRootView>
   );
 }

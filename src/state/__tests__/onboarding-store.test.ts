@@ -18,7 +18,7 @@ vi.mock('@/platform/storage', () => {
 const { storageData } = (await import('@/platform/storage')) as unknown as {
   storageData: Map<string, string>;
 };
-const { needsTutorial, tutorialDue, useOnboardingStore } = await import('../onboarding-store');
+const { needsTutorial, useOnboardingStore } = await import('../onboarding-store');
 const { useProgressStore } = await import('../progress-store');
 const { useSavedGamesStore } = await import('../saved-games-store');
 
@@ -44,21 +44,21 @@ describe('needsTutorial', () => {
   });
 });
 
-describe('tutorialDue', () => {
-  it('reads the stores once they have all loaded', async () => {
-    // Nothing loaded yet: an existing player's progress could still be on its way.
-    expect(tutorialDue()).toBe(false);
+describe('stores the tutorial check waits for', () => {
+  it('say when they have loaded', async () => {
+    expect([
+      useOnboardingStore.getState().ready,
+      useProgressStore.getState().ready,
+      useSavedGamesStore.getState().ready,
+    ]).toEqual([false, false, false]);
     await useOnboardingStore.persist.rehydrate();
-    await useSavedGamesStore.persist.rehydrate();
-    expect(tutorialDue()).toBe(false);
     await useProgressStore.persist.rehydrate();
-    expect(tutorialDue()).toBe(true);
-
-    useProgressStore.getState().recordSolve('intro-01', 1000);
-    expect(tutorialDue()).toBe(false);
-    useProgressStore.setState({ levels: {} });
-    useOnboardingStore.getState().markTutorialSeen();
-    expect(tutorialDue()).toBe(false);
+    await useSavedGamesStore.persist.rehydrate();
+    expect([
+      useOnboardingStore.getState().ready,
+      useProgressStore.getState().ready,
+      useSavedGamesStore.getState().ready,
+    ]).toEqual([true, true, true]);
   });
 });
 

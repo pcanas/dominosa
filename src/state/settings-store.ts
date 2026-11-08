@@ -15,6 +15,8 @@ export interface Settings {
   readonly vibration: boolean;
   /** Show the running time while playing. Off by default: the game is relaxed, time is still recorded. */
   readonly showTimer: boolean;
+  /** The Hint button, in games and in the tutorial. Players who want none at all turn it off. */
+  readonly hints: boolean;
   readonly theme: ThemeSetting;
   readonly language: LanguageSetting;
   readonly numberStyle: NumberStyle;
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: true,
   vibration: true,
   showTimer: false,
+  hints: true,
   theme: 'system',
   language: 'system',
   numberStyle: 'digits',
@@ -40,6 +43,7 @@ export function sanitizeSettings(value: unknown): Settings {
     sound: typeof v.sound === 'boolean' ? v.sound : DEFAULT_SETTINGS.sound,
     vibration: typeof v.vibration === 'boolean' ? v.vibration : DEFAULT_SETTINGS.vibration,
     showTimer: typeof v.showTimer === 'boolean' ? v.showTimer : DEFAULT_SETTINGS.showTimer,
+    hints: typeof v.hints === 'boolean' ? v.hints : DEFAULT_SETTINGS.hints,
     theme: THEMES.includes(v.theme as ThemeSetting) ? (v.theme as ThemeSetting) : DEFAULT_SETTINGS.theme,
     language: LANGUAGES.includes(v.language as LanguageSetting)
       ? (v.language as LanguageSetting)
@@ -78,6 +82,6 @@ export const useSettingsStore = create<SettingsStore>()(
 );
 
 function pickSettings(state: Settings): Settings {
-  const { sound, vibration, showTimer, theme, language, numberStyle } = state;
-  return { sound, vibration, showTimer, theme, language, numberStyle };
+  const { sound, vibration, showTimer, hints, theme, language, numberStyle } = state;
+  return { sound, vibration, showTimer, hints, theme, language, numberStyle };
 }

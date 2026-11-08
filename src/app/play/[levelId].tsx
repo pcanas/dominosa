@@ -86,6 +86,8 @@ function PlayScreen({ level }: { readonly level: Level }) {
   const vibration = useSettingsStore((s) => s.vibration);
   const soundOn = useSettingsStore((s) => s.sound);
   const numberStyle = useSettingsStore((s) => s.numberStyle);
+  /** Off in settings: no Hint button, and a hint on screen goes away. */
+  const hintsOn = useSettingsStore((s) => s.hints);
   /** Cell of the domino that solved the board, where the solve wave starts. */
   const [celebrateFrom, setCelebrateFrom] = useState<CellIndex | null>(null);
   const screenReaderOn = useScreenReader();
@@ -145,7 +147,7 @@ function PlayScreen({ level }: { readonly level: Level }) {
     selectedPair !== null && !solved
       ? { label: pairLabel(selectedPair, order), slots: pairSlots(game, selectedPair) }
       : null;
-  const activeHint = hintState && hintState.game === game && !solved ? hintState : null;
+  const activeHint = hintState && hintsOn && hintState.game === game && !solved ? hintState : null;
   const hintView = activeHint
     ? describeHint(activeHint.hint, activeHint.stage, game, t, { pickMode: screenReaderOn })
     : null;
@@ -344,7 +346,9 @@ function PlayScreen({ level }: { readonly level: Level }) {
               showLabel
               compact
             />
-            <IconButton icon="bulb-outline" label={t.actions.hint} onPress={onHint} showLabel compact />
+            {hintsOn && (
+              <IconButton icon="bulb-outline" label={t.actions.hint} onPress={onHint} showLabel compact />
+            )}
             <IconButton
               icon="refresh"
               label={confirmingReset ? t.actions.confirmReset : t.actions.reset}

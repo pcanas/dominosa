@@ -5,7 +5,6 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useStrings } from '@/i18n';
 import { getPack, PACKS, type LevelPack } from '@/levels';
 import { useHydrated } from '@/platform/use-hydrated';
-import { tutorialDue } from '@/state/onboarding-store';
 import { useProgressStore } from '@/state/progress-store';
 import { useSavedGamesStore } from '@/state/saved-games-store';
 import { AppText } from '@/ui/components/AppText';
@@ -27,12 +26,6 @@ export default function PackRoute() {
 }
 
 const COLUMNS = 4;
-
-/** Opens a level; a new player's first one goes through the tutorial first. */
-function openLevel(levelId: string) {
-  if (tutorialDue()) router.push({ pathname: '/tutorial', params: { then: levelId } });
-  else router.push({ pathname: '/play/[levelId]', params: { levelId } });
-}
 
 function PackScreen({ pack }: { readonly pack: LevelPack }) {
   const t = useStrings();
@@ -69,7 +62,7 @@ function PackScreen({ pack }: { readonly pack: LevelPack }) {
                 solved={hydrated && progress[level.id] !== undefined}
                 perfect={hydrated && progress[level.id]?.perfect === true}
                 inProgress={hydrated && savedGames[level.id] !== undefined}
-                onPress={() => openLevel(level.id)}
+                onPress={() => router.push({ pathname: '/play/[levelId]', params: { levelId: level.id } })}
               />
             ))}
             {Array.from({ length: COLUMNS - row.length }, (_, i) => (
