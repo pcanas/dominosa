@@ -215,6 +215,12 @@ const es = {
   help: {
     howToPlay: 'Cómo se juega',
   },
+  /** The first screen after installing the app, before the tutorial. */
+  welcome: {
+    tagline: 'Puzles de lógica con fichas de dominó',
+    learn: 'Aprende a jugar',
+    known: 'Ya sé jugar',
+  },
   notFound: 'Este nivel no existe.',
   goHome: 'Ir al inicio',
 };
@@ -399,6 +405,11 @@ const en: Strings = {
   help: {
     howToPlay: 'How to play',
   },
+  welcome: {
+    tagline: 'Logic puzzles with dominoes',
+    learn: 'Learn to play',
+    known: 'I already know how to play',
+  },
   notFound: 'This level does not exist.',
   goHome: 'Go home',
 };
@@ -580,6 +591,11 @@ const fr: Strings = {
   },
   help: {
     howToPlay: 'Comment jouer',
+  },
+  welcome: {
+    tagline: 'Des puzzles de logique avec des dominos',
+    learn: 'Apprendre à jouer',
+    known: 'Je sais déjà jouer',
   },
   notFound: 'Ce niveau n’existe pas.',
   goHome: 'Accueil',

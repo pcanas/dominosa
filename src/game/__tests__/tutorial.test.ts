@@ -5,7 +5,7 @@ import { TUTORIAL_LEVEL } from '@/levels';
 
 import { gameReducer, hasWall, isSolved, placedTiles } from '../game';
 import { hintAction, nextHint } from '../hint';
-import { TUTORIAL_STEPS, tutorialBoard, tutorialPlan, tutorialSteps } from '../tutorial';
+import { TUTORIAL_STEPS, tutorialBoard, tutorialPlan } from '../tutorial';
 
 const { puzzle, solution } = TUTORIAL_LEVEL;
 const plan = tutorialPlan(puzzle, solution)!;
@@ -46,18 +46,10 @@ describe('tutorialBoard', () => {
     expect(hintAction(hint)).toEqual({ type: 'place', ...plan.hint });
   });
 
-  it('can be finished from the last step, with or without the hint step', () => {
-    for (const hints of [true, false]) {
-      let game = tutorialBoard(puzzle, plan, 'finish', hints);
-      expect(placedTiles(game)).toHaveLength(hints ? 2 : 1);
-      for (let i = 0; i < 10 && !isSolved(game); i++)
-        game = gameReducer(game, hintAction(nextHint(game, solution)!));
-      expect(isSolved(game)).toBe(true);
-    }
-  });
-
-  it('leaves the hint step out when hints are off', () => {
-    expect(tutorialSteps(true)).toEqual(TUTORIAL_STEPS);
-    expect(tutorialSteps(false)).toEqual(['place', 'remove', 'wall', 'finish']);
+  it('can be finished from the last step', () => {
+    let game = tutorialBoard(puzzle, plan, 'finish');
+    for (let i = 0; i < 10 && !isSolved(game); i++)
+      game = gameReducer(game, hintAction(nextHint(game, solution)!));
+    expect(isSolved(game)).toBe(true);
   });
 });

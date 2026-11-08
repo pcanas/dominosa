@@ -50,8 +50,10 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: palette.background },
           animation: 'fade',
         }}>
-        {/* The first-launch tutorial is just there, over the home screen, and only "Skip" leaves it. */}
+        {/* First launch: the welcome screen is just there, over the home screen; it and the tutorial
+            after it are left with their own buttons, not by swiping back. */}
         <Stack.Screen name="welcome" options={{ animation: 'none', gestureEnabled: false }} />
+        <Stack.Screen name="learn" options={{ gestureEnabled: false }} />
       </Stack>
     </GestureHandlerRootView>
   );

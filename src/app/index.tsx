@@ -17,7 +17,7 @@ import { packSummary } from '@/ui/level-list/pack-summary';
 import { PackCard } from '@/ui/level-list/PackCard';
 import { spacing } from '@/ui/theme';
 
-/** The tutorial opens by itself at most once per launch, even if it is left without finishing it. */
+/** The welcome screen opens by itself at most once per launch, even if it is left with the back button. */
 let welcomeShown = false;
 
 export default function HomeScreen() {
@@ -27,7 +27,7 @@ export default function HomeScreen() {
   const savedGames = useSavedGamesStore((s) => s.games);
   const tutorialDue = useTutorialDue();
 
-  // The first time the app opens, the tutorial comes up over the home screen.
+  // The first time the app opens, the welcome screen (and from it, the tutorial) comes up over the home screen.
   useEffect(() => {
     if (!tutorialDue || welcomeShown) return;
     welcomeShown = true;

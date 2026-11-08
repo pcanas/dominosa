@@ -13,9 +13,9 @@ import {
   moveOutcome,
   nextHint,
   placedTiles,
+  TUTORIAL_STEPS,
   tutorialBoard,
   tutorialPlan,
-  tutorialSteps,
   wallPairs,
   type GameAction,
   type GameState,
@@ -47,7 +47,15 @@ import { HintSheet } from '@/ui/play/HintSheet';
 import { WallToggle } from '@/ui/play/WallToggle';
 import { radius, spacing, useTheme } from '@/ui/theme';
 
-import { coachMarks, coachMessage, isExpected, stepNumber, type CoachMessage, type CoachStep } from './coach';
+import {
+  coachMarks,
+  coachMessage,
+  isExpected,
+  stepNumber,
+  TUTORIAL_STEP_COUNT,
+  type CoachMessage,
+  type CoachStep,
+} from './coach';
 import { CoachCard, type CoachTone } from './CoachCard';
 
 const { puzzle, solution } = TUTORIAL_LEVEL;
@@ -61,11 +69,11 @@ const NEXT_STEP_MS = 700;
 
 interface TutorialScreenProps {
   /**
-   * `welcome`: the first time the app opens, over the home screen, with no way
-   * back but "Skip", and "Let's play!" at the end. `replay`: from the home
-   * screen's "How to play", with a back button.
+   * `first`: after the welcome screen's "Learn to play", the first time the app
+   * opens, with no way back but "Skip" and "Let's play!" at the end. `replay`:
+   * from the home screen's "How to play", with a back button.
    */
-  readonly mode: 'welcome' | 'replay';
+  readonly mode: 'first' | 'replay';
 }
 
 /** "How to play": a guided game on a small board of its own (see `src/game/tutorial.ts`). */
@@ -77,9 +85,6 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
   const soundOn = useSettingsStore((s) => s.sound);
   const vibration = useSettingsStore((s) => s.vibration);
   const numberStyle = useSettingsStore((s) => s.numberStyle);
-  /** Off in settings: no Hint button, and no hint step. */
-  const hintsOn = useSettingsStore((s) => s.hints);
-  const steps = tutorialSteps(hintsOn);
   const screenReaderOn = useScreenReader();
   const { announcement, say } = useAnnouncer();
 
@@ -120,7 +125,7 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
   const pickMode = screenReaderOn;
   const selectedCell = pickMode ? pickedCell : null;
   const solved = isSolved(game);
-  const activeHint = hintState && hintsOn && hintState.game === game && !solved ? hintState : null;
+  const activeHint = hintState && hintState.game === game && !solved ? hintState : null;
   const hintView = activeHint ? describeHint(activeHint.hint, activeHint.stage, game, t, { pickMode }) : null;
   const marks = hintView?.marks ?? (advancing ? NO_HINT_MARKS : coachMarks(step, PLAN));
   const descriptions = describeCells(game, selectedCell, t);
@@ -133,7 +138,7 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
   // Every instruction and nudge, so the card keeps one height all along.
   const candidates = [
     ...new Set(
-      steps.flatMap((s) =>
+      TUTORIAL_STEPS.flatMap((s) =>
         [false, true].map((n) => coachMessage(s, PLAN, puzzle, t, { pickMode, nudge: n }).text),
       ),
     ),
@@ -151,7 +156,7 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
 
   /** The step's move is done: "Nice!", then the next step's board and instruction. */
   const advance = (from: TutorialStep) => {
-    const next = steps[steps.indexOf(from) + 1]!;
+    const next = TUTORIAL_STEPS[TUTORIAL_STEPS.indexOf(from) + 1]!;
     setAdvancing(true);
     setNudge(false);
     setWallButton(WALL_BUTTON_OFF);
@@ -160,7 +165,7 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
     nextStepTimer.current = setTimeout(() => {
       setStep(next);
       // Undo starts afresh on each step; on the second one, the coach puts the repeated domino down.
-      setGame(tutorialBoard(puzzle, PLAN, next, hintsOn));
+      setGame(tutorialBoard(puzzle, PLAN, next));
       setAdvancing(false);
       if (next === 'remove' && soundOn) sound.place();
       say(coachMessage(next, PLAN, puzzle, t, { pickMode, nudge: false }).spoken);
@@ -256,9 +261,9 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
       </Head>
       <TopBar
         backTo="/"
-        noBack={mode === 'welcome'}
+        noBack={mode === 'first'}
         right={
-          mode === 'welcome' && step !== 'done' ? (
+          mode === 'first' && step !== 'done' ? (
             <Pressable
               onPress={skip}
               accessibilityRole="button"
@@ -277,7 +282,7 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
 
       <View style={styles.coach}>
         <CoachCard
-          caption={t.tutorial.stepOf(stepNumber(step, steps) ?? steps.length, steps.length)}
+          caption={t.tutorial.stepOf(stepNumber(step) ?? TUTORIAL_STEP_COUNT, TUTORIAL_STEP_COUNT)}
           message={message}
           tone={tone}
           candidates={candidates}
@@ -310,8 +315,8 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
       <View style={[styles.toolbar, step === 'done' && styles.toolbarDone]}>
         {step === 'done' ? (
           <PillButton
-            label={mode === 'welcome' ? t.tutorial.play : t.tutorial.back}
-            onPress={mode === 'welcome' ? startPlaying : leave}
+            label={mode === 'first' ? t.tutorial.play : t.tutorial.back}
+            onPress={mode === 'first' ? startPlaying : leave}
           />
         ) : (
           <>
@@ -330,17 +335,15 @@ export function TutorialScreen({ mode }: TutorialScreenProps) {
               disabled={!guided('wall') && !guided('finish')}
               tone={guided('wall') ? 'accent' : 'default'}
             />
-            {hintsOn && (
-              <IconButton
-                icon="bulb-outline"
-                label={t.actions.hint}
-                onPress={onHint}
-                disabled={!guided('hint') && !guided('finish')}
-                tone={guided('hint') ? 'accent' : 'default'}
-                showLabel
-                compact
-              />
-            )}
+            <IconButton
+              icon="bulb-outline"
+              label={t.actions.hint}
+              onPress={onHint}
+              disabled={!guided('hint') && !guided('finish')}
+              tone={guided('hint') ? 'accent' : 'default'}
+              showLabel
+              compact
+            />
           </>
         )}
       </View>

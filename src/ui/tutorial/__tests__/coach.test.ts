@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { tutorialPlan, tutorialSteps, type GameAction } from '@/game';
+import { tutorialPlan, type GameAction } from '@/game';
 import { STRINGS } from '@/i18n/strings';
 import { TUTORIAL_LEVEL } from '@/levels';
 
-import { coachMarks, coachMessage, isExpected, stepNumber } from '../coach';
+import { coachMarks, coachMessage, isExpected, stepNumber, TUTORIAL_STEP_COUNT } from '../coach';
 
 const t = STRINGS.es;
 const { puzzle, solution } = TUTORIAL_LEVEL;
@@ -70,11 +70,8 @@ describe('coachMarks and stepNumber', () => {
   });
 
   it('counts steps from one', () => {
-    const all = tutorialSteps(true);
-    const noHints = tutorialSteps(false);
-    expect(stepNumber('place', all)).toBe(1);
-    expect(stepNumber('finish', all)).toBe(5);
-    expect(stepNumber('finish', noHints)).toBe(4);
-    expect(stepNumber('done', all)).toBeNull();
+    expect(stepNumber('place')).toBe(1);
+    expect(stepNumber('finish')).toBe(TUTORIAL_STEP_COUNT);
+    expect(stepNumber('done')).toBeNull();
   });
 });

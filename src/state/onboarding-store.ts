@@ -8,7 +8,7 @@ import { useProgressStore } from './progress-store';
 import { useSavedGamesStore } from './saved-games-store';
 
 interface OnboardingStore {
-  /** The tutorial was finished or skipped once. */
+  /** The tutorial was finished or skipped once (also with "I already know how to play"). */
   readonly tutorialSeen: boolean;
   /** True once the stored value has loaded (or loading failed). */
   readonly ready: boolean;
@@ -53,9 +53,9 @@ export interface FirstRun {
 }
 
 /**
- * Whether the app should open on the tutorial: never seen, and the player has
- * not played yet (people who played before it existed skip it; it stays one tap
- * away under "How to play").
+ * Whether the app should open on the welcome screen and its tutorial: never
+ * seen, and the player has not played yet (people who played before it existed
+ * skip it; it stays one tap away under "How to play").
  */
 export function needsTutorial({ loaded, tutorialSeen, progress, savedGames }: FirstRun): boolean {
   return (
@@ -63,7 +63,7 @@ export function needsTutorial({ loaded, tutorialSeen, progress, savedGames }: Fi
   );
 }
 
-/** `needsTutorial` for what is stored, kept up to date: the home screen opens the tutorial with it. */
+/** `needsTutorial` for what is stored, kept up to date: the home screen opens the welcome screen with it. */
 export function useTutorialDue(): boolean {
   const onboardingReady = useOnboardingStore((s) => s.ready);
   const tutorialSeen = useOnboardingStore((s) => s.tutorialSeen);

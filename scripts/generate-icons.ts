@@ -12,6 +12,8 @@
  *    stays inside the safe zone launchers never crop.
  *  - Splash screen, web favicon (the domino alone), PWA icons (incl. maskable)
  *    and the apple-touch-icon used when the web app is added to the home screen.
+ *  - The welcome screen's icon, light and dark (shown at 160 pt, so 480 px is
+ *    enough for 3× screens; its corners are rounded on screen).
  *  - `assets/brand/icon.svg`: the main icon as SVG, for reference.
  *
  * Deterministic: same art, same files.
@@ -56,6 +58,8 @@ const OUTPUTS: readonly Output[] = [
     size: 48,
     art: { board: 'none', centered: true, scale: 1.1, shadow: false },
   },
+  { file: 'assets/images/welcome-icon.png', size: 480, art: { board: 'light' }, opaque: true },
+  { file: 'assets/images/welcome-icon-dark.png', size: 480, art: { board: 'dark' }, opaque: true },
   { file: 'public/apple-touch-icon.png', size: 180, art: { board: 'light' }, opaque: true },
   { file: 'public/icons/icon-192.png', size: 192, art: { board: 'light' } },
   { file: 'public/icons/icon-512.png', size: 512, art: { board: 'light' } },
